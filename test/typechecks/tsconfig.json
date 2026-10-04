@@ -9,5 +9,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["providers.tsx"]
+  "include": ["providers.tsx", "chat.tsx"]
 }

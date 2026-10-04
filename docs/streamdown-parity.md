@@ -15,7 +15,7 @@ Verified against the completed full-port checkout:
 | `bun run test:run`                                        | 194 tests passed across 16 files                      |
 | `bun run typecheck`, `bun run check:fix`, `bun run build` | Passed                                                |
 | `bun run test:types`                                      | Built-package consumer types passed                   |
-| `bun run test:browser`                                    | 18 Chromium tests passed across 9 files               |
+| `bun run test:browser`                                    | 19 Chromium tests passed across 10 files              |
 | `bun run test:hydration`                                  | 1 separate Chromium hydration test passed             |
 | `bun run test:ssr`                                        | Node SSR without browser globals passed               |
 | Gittydocs 0.0.7 build                                     | 30 static routes, 30 Markdown exports and `/llms.txt` |
@@ -32,6 +32,11 @@ horizontal document overflow or page errors.
 
 An isolated `npm pack` installation also verified the root exports, all four
 plugin subpaths and Node SSR, without relying on this checkout’s node_modules.
+
+The AI SDK example is also checked against `ai-sdk-solid@0.2.0` and AI SDK 5.
+Its browser fixture streams through the real adapter and verifies text updates,
+status transitions, settled output and retained paragraph/animation objects.
+The README chat snippet has a built-package consumer typecheck.
 
 The browser checks cover long-message structural rewrites, repeated-prefix reveal
 sessions, provider updates, clipboard/export bytes, live fullscreen table state,

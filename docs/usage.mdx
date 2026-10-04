@@ -3,6 +3,87 @@ title: Usage
 description: Streaming state, static rendering, and transport integration.
 ---
 
+## AI SDK
+
+Install the community Solid adapter [ai-sdk-solid](https://github.com/rajaniraiyn/ai-sdk-solid). It uses AI SDK 5 and is not part of Solid Streamdown.
+
+<Tabs items={["npm", "pnpm", "bun"]} groupId="package-manager" persist label="Package manager">
+<Tab value="npm">
+
+```bash
+npm install ai-sdk-solid
+```
+
+</Tab>
+<Tab value="pnpm">
+
+```bash
+pnpm add ai-sdk-solid
+```
+
+</Tab>
+<Tab value="bun">
+
+```bash
+bun add ai-sdk-solid
+```
+
+</Tab>
+</Tabs>
+
+This example requires an AI SDK chat endpoint at `/api/chat`; call `sendMessage` from `useChat` to start a response.
+
+```tsx
+import { For, Index, Show } from "solid-js";
+import { useChat } from "ai-sdk-solid";
+import { Streamdown } from "solid-streamdown";
+import { code } from "solid-streamdown/code";
+import { mermaid } from "solid-streamdown/mermaid";
+import { math } from "solid-streamdown/math";
+import { cjk } from "solid-streamdown/cjk";
+import "katex/dist/katex.min.css";
+import "solid-streamdown/styles.css";
+
+export default function Chat() {
+  const { messages, status } = useChat();
+
+  return (
+    <div>
+      <For each={messages}>
+        {(message) => (
+          <div>
+            {message.role === "user" ? "User: " : "AI: "}
+            <Index each={message.parts}>
+              {(part) => {
+                const textPart = () => {
+                  const value = part();
+                  return value.type === "text" ? value.text : undefined;
+                };
+                return (
+                  <Show when={part().type === "text"}>
+                    <Streamdown
+                      animated
+                      plugins={{ code, mermaid, math, cjk }}
+                      isAnimating={status() === "streaming"}
+                    >
+                      {textPart()}
+                    </Streamdown>
+                  </Show>
+                );
+              }}
+            </Index>
+          </div>
+        )}
+      </For>
+    </div>
+  );
+}
+```
+
+`messages` is a reactive array, not an accessor. Call `status()` to read the current status. `Index` keeps each part's renderer mounted while its text updates; `Show` checks the part type without keying the renderer on the changing part object or text string.
+
+## Streaming state
+
 Pass the accumulated Markdown string as reactive `children`; append transport chunks in your application. Set `isAnimating` explicitly while the response is active. Neither prop opens an SSE connection or starts a model request.
 
 ```tsx

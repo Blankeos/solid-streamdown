@@ -11,11 +11,17 @@ for AI chat interfaces. It draws from two reference implementations:
 - **Copyright**: Copyright 2023 Vercel, Inc.
 - **Pinned ref**: `2.7.0`, commit `08da224`
 - **References**: renderer contracts, block parsing/direction, processing helpers,
-  native controls/composables, animation/streaming behavior and feature plugins
+  native controls/composables, animation/streaming behavior, feature plugins and
+  README wording/structure
 
 The original React-based streaming markdown renderer. solid-streamdown
 follows the same unified/remark/rehype pipeline shape, adapted for
 SolidJS's reactive runtime.
+
+The README preserves wording and structure from Vercel Streamdown's
+`packages/streamdown/README.md`, with changes for Solid APIs, native plugin paths,
+styling and fork installation. The adapted documentation retains Apache-2.0
+attribution, Copyright 2023 Vercel, Inc.; see `LICENSE-STREAMDOWN`.
 
 ## svelte-streamdown (Svelte Port)
 

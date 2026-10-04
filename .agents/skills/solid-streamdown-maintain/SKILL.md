@@ -18,7 +18,7 @@ Read root `CLAUDE.md`, `docs/streamdown-parity.md`, `docs/legacy.mdx`, and the s
 
 ## Contract
 
-Aim for 1:1 native Solid API/behavior compatibility with the exact target, not a React wrapper. Solid `Component`/`JSX`, reactive props, refs and portal ownership necessarily differ. Remaining gaps are implementation work, not permanent Solid limitations. The full functional surface is implemented with mapped fixtures; do not declare exhaustive performance/security parity based only on export names or passing counts. Verified baseline: 194 unit tests across 16 files, 18 Chromium tests, 1 separate hydration test, built-package consumer types and Node SSR. Record fresh results after every update; historical counts are not current evidence.
+Aim for 1:1 native Solid API/behavior compatibility with the exact target, not a React wrapper. Solid `Component`/`JSX`, reactive props, refs and portal ownership necessarily differ. Remaining gaps are implementation work, not permanent Solid limitations. The full functional surface is implemented with mapped fixtures; do not declare exhaustive performance/security parity based only on export names or passing counts. Verified baseline: 194 unit tests across 16 files, 19 Chromium tests, 1 separate hydration test, built-package consumer types and Node SSR. Record fresh results after every update; historical counts are not current evidence.
 
 Preserve legacy content/stream precedence, repair-while-active defaults, caret default, stream accessors and URL callback shape. Keep direct Streamdown defaults distinct. Native provider imports are `solid-streamdown/{code,math,cjk,mermaid}`; component-valued contracts must be Solid. Do not add React runtime peers to compensate for an unfinished port.
 
@@ -30,7 +30,7 @@ Preserve legacy content/stream precedence, repair-while-active defaults, caret d
 4. External async callbacks need captured owner and stale-result guards. SSR/browser fallback and disposal are part of correctness, not cleanup polish.
 5. Validate default raw HTML sanitation/hardening and replacement plugin semantics. Element filters, URL checks, modal confirmation and Mermaid SVG sanitation are different boundaries. Trusted callbacks can bypass default safety.
 6. Check built conditional exports and symbols in Node SSR as well as browser/Solid compilation. Never import browser globals during server initialization.
-7. Update original documentation, acceptance evidence and attribution. Retain MIT plus Apache-2.0 notices (`LICENSE-STREAMDOWN`, `ATTRIBUTION.md`). Do not copy upstream docs wholesale.
+7. Keep documentation wording and structure close to upstream. Reuse upstream wording where accurate; change only what Solid APIs, package names or installation require. Avoid unnecessary paraphrasing. Retain MIT plus Apache-2.0 notices (`LICENSE-STREAMDOWN`, `ATTRIBUTION.md`) and credit adapted documentation.
 8. Capture reusable translation lessons in the shared react-to-solid resources, not library-specific rules there.
 
 ## Required verification
