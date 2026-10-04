@@ -1,0 +1,212 @@
+/**
+ * Adapted from Vercel Streamdown 2.7.0.
+ * Copyright 2023 Vercel, Inc.
+ * Licensed under Apache-2.0; see LICENSE-STREAMDOWN and ATTRIBUTION.md.
+ */
+
+import type { Component } from "solid-js";
+import type { Pluggable } from "unified";
+import type {
+  BundledLanguage,
+  BundledTheme,
+  ThemeRegistrationAny,
+} from "shiki";
+
+export type {
+  BundledLanguage,
+  BundledTheme,
+  ThemeRegistrationAny,
+} from "shiki";
+
+export type ThemeInput = BundledTheme | ThemeRegistrationAny;
+
+/**
+ * A single token in a highlighted line
+ */
+export interface HighlightToken {
+  bgColor?: string;
+  color?: string;
+  content: string;
+  htmlAttrs?: Record<string, string>;
+  htmlStyle?: Record<string, string>;
+  offset?: number;
+}
+
+/**
+ * Result from code highlighting (compatible with shiki's TokensResult)
+ */
+export interface HighlightResult {
+  bg?: string;
+  fg?: string;
+  rootStyle?: string | false;
+  tokens: HighlightToken[][];
+}
+
+/**
+ * Options for highlighting code
+ */
+export interface HighlightOptions {
+  code: string;
+  /**
+   * Whether the code block is still streaming. Its result is superseded by
+   * the next update, so plugins can avoid caching it long-term.
+   */
+  isIncomplete?: boolean;
+  language: BundledLanguage;
+  themes: [ThemeInput, ThemeInput];
+}
+
+/**
+ * Plugin for code syntax highlighting (Shiki)
+ *
+ * Method syntax is intentional: parameter types stay bivariant so plugins
+ * from `@streamdown/code` (which use Shiki's narrower language/theme unions)
+ * remain assignable without requiring a `shiki` type dependency here.
+ */
+export interface CodeHighlighterPlugin {
+  /**
+   * Get list of supported languages
+   */
+  getSupportedLanguages(): BundledLanguage[];
+  /**
+   * Get the configured themes
+   */
+  getThemes(): [ThemeInput, ThemeInput];
+  /**
+   * Highlight code and return tokens
+   * Returns null if highlighting not ready yet (async loading)
+   * Use callback for async result
+   */
+  highlight(
+    options: HighlightOptions,
+    callback?: (result: HighlightResult) => void,
+  ): HighlightResult | null;
+  name: "shiki";
+  /**
+   * Check if language is supported
+   */
+  supportsLanguage(language: BundledLanguage): boolean;
+  type: "code-highlighter";
+}
+
+/**
+ * Structural type for Mermaid configuration pass-through.
+ * Avoids a hard dependency on the "mermaid" package in the core bundle.
+ */
+export type MermaidConfig = {
+  fontFamily?: string;
+  securityLevel?: string;
+  startOnLoad?: boolean;
+  suppressErrorRendering?: boolean;
+  theme?: string;
+  themeCSS?: string;
+  themeVariables?: Record<string, unknown>;
+  // biome-ignore lint/suspicious/noExplicitAny: open pass-through for mermaid options
+} & Record<string, any>;
+
+/**
+ * Mermaid instance interface.
+ *
+ * Method syntax is intentional: parameter types stay bivariant so
+ * `@streamdown/mermaid` (which uses mermaid's narrower `MermaidConfig`) remains
+ * assignable without a core type dependency on the mermaid package.
+ */
+export interface MermaidInstance {
+  initialize(config: MermaidConfig): void;
+  render(id: string, source: string): Promise<{ svg: string }>;
+}
+
+/**
+ * Plugin for diagram rendering (Mermaid).
+ *
+ * Method syntax on `getMermaid` matches `CodeHighlighterPlugin` — keeps plugin
+ * implementations with narrower config types assignable under
+ * `strictFunctionTypes`.
+ */
+export interface DiagramPlugin {
+  /**
+   * Get the mermaid instance (initialized with optional config)
+   */
+  getMermaid(config?: MermaidConfig): MermaidInstance;
+  /**
+   * Language identifier for code blocks
+   */
+  language: string;
+  name: "mermaid";
+  type: "diagram";
+}
+
+/**
+ * Plugin for math rendering (KaTeX)
+ */
+export interface MathPlugin {
+  /**
+   * Get CSS styles for math rendering (injected into head)
+   */
+  getStyles?: () => string;
+  name: "katex";
+  /**
+   * Get rehype plugin for rendering math
+   */
+  rehypePlugin: Pluggable;
+  /**
+   * Get remark plugin for parsing math syntax
+   */
+  remarkPlugin: Pluggable;
+  type: "math";
+}
+
+/**
+ * Plugin for CJK text handling
+ */
+export interface CjkPlugin {
+  name: "cjk";
+  /**
+   * @deprecated Use remarkPluginsBefore and remarkPluginsAfter instead
+   * All remark plugins (for backwards compatibility)
+   */
+  remarkPlugins: Pluggable[];
+  /**
+   * Remark plugins that must run AFTER remarkGfm
+   * (e.g., autolink boundary splitting, strikethrough enhancements)
+   */
+  remarkPluginsAfter: Pluggable[];
+  /**
+   * Remark plugins that must run BEFORE remarkGfm
+   * (e.g., remark-cjk-friendly which modifies emphasis handling)
+   */
+  remarkPluginsBefore: Pluggable[];
+  type: "cjk";
+}
+
+/**
+ * Union type for all plugins
+ */
+export type StreamdownPlugin =
+  CodeHighlighterPlugin | DiagramPlugin | MathPlugin | CjkPlugin;
+
+export interface CustomRendererProps {
+  code: string;
+  isIncomplete: boolean;
+  language: string;
+  /** Raw metastring from the code fence (everything after the language identifier).
+   * e.g. ```rust {1} title="foo"  →  meta = '{1} title="foo"'
+   * Undefined when no metastring is present. */
+  meta?: string;
+}
+
+export interface CustomRenderer {
+  component: Component<CustomRendererProps>;
+  language: string | string[];
+}
+
+/**
+ * Plugin configuration passed to Streamdown
+ */
+export interface PluginConfig {
+  cjk?: CjkPlugin;
+  code?: CodeHighlighterPlugin;
+  math?: MathPlugin;
+  mermaid?: DiagramPlugin;
+  renderers?: CustomRenderer[];
+}

@@ -1,12 +1,14 @@
 /**
  * solid-streamdown default styles
  *
- * Import this CSS to get the streaming caret animation.
- * All styles are scoped under the .streamdown class.
+ * Import this CSS for the streaming caret and word-animation keyframes.
+ * All styles are scoped under the .streamdown class. Custom animations use
+ * the same contract: define `@keyframes sd-<name>` in the app (for example
+ * `sd-quartaReveal`) and pass `animated={{ animation: "<name>" }}`.
  */
 
-/* Caret (blinking cursor) animation during streaming */
-.streamdown-caret > .streamdown-block:last-child ::after {
+/* Caret (blinking cursor) on the terminal host only */
+.streamdown-caret > :last-child::after {
   content: "▋";
   display: inline;
   animation: streamdown-blink 0.7s steps(2, start) infinite;
@@ -23,11 +25,12 @@
 }
 
 /* When streaming ends, remove the caret immediately */
-.streamdown:not(.streamdown-caret) > .streamdown-block:last-child ::after {
+.streamdown:not(.streamdown-caret) > :last-child::after {
   content: none;
 }
 
-/* Block wrapper resets — blocks should not add extra spacing */
+/* Block wrapper compat — current renderer emits no wrappers, but older
+ * markup with .streamdown-block keeps layout via display: contents. */
 .streamdown-block {
   display: contents;
 }
@@ -37,4 +40,101 @@
   display: block;
   overflow-x: auto;
   max-width: 100%;
+}
+
+/* Streaming word animation keyframes */
+@keyframes sd-fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sd-blurIn {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes sd-slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[data-sd-animate] {
+  /* Units include trailing spaces; preserve them when custom effects use inline-block. */
+  white-space: pre-wrap;
+  animation: var(--sd-animation, sd-fadeIn) var(--sd-duration, 150ms)
+    var(--sd-easing, ease) var(--sd-delay, 0ms) both;
+}
+
+/*
+ * List markers (the disc/decimal glyph) are painted by the browser's
+ * ::marker pseudo-element, which the animate plugin can't wrap in a
+ * span. ::marker also doesn't honor opacity/transform animations, so we
+ * fade it in via color (which it does support) instead, synced to the
+ * timing the plugin stamps from the item's first word.
+ */
+@keyframes sd-markerIn {
+  from {
+    color: transparent;
+  }
+}
+
+[data-sd-animate-marker]::marker {
+  animation: sd-markerIn var(--sd-marker-duration, 150ms)
+    var(--sd-marker-easing, ease) var(--sd-marker-delay, 0ms) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sd-animate] {
+    animation: none;
+  }
+  [data-sd-animate-marker]::marker {
+    animation: none;
+  }
+  .streamdown-caret > :last-child::after {
+    animation: none;
+  }
+}
+
+/* Structural dual-theme token styles from Shiki. */
+.sd-code {
+  color: inherit;
+  overflow: auto;
+}
+.sd-code-line[data-line]::before {
+  content: attr(data-line);
+  display: inline-block;
+  min-width: 2em;
+  margin-right: 1em;
+  opacity: 0.45;
+  user-select: none;
+}
+.dark .sd-code,
+.dark .sd-code span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+.streamdown-caret[data-caret="circle"] > :last-child::after {
+  content: " ●";
+}
+.streamdown-caret[data-caret="block"] > :last-child::after {
+  content: " ▋";
 }

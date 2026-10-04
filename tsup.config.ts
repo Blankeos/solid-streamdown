@@ -6,7 +6,11 @@ const presetOptions: preset.PresetOptions = {
     {
       entry: "src/index.tsx",
       dev_entry: true,
+      server_entry: true,
     },
+    ...["code", "math", "cjk", "mermaid"].map((name) => ({
+      entry: `src/plugins/${name}.ts`,
+    })),
   ],
   drop_console: true,
   cjs: false,

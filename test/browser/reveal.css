@@ -1,0 +1,25 @@
+/* Quarta's custom reveal, copied locally so this fixture is self-contained. */
+@keyframes sd-quartaReveal {
+  0% {
+    color: var(--shimmer-highlight-color);
+    opacity: 0;
+    transform: translateY(3px) scale(0.96);
+  }
+  45% {
+    color: var(--shimmer-highlight-color);
+  }
+  100% {
+    color: var(--shimmer-text-color);
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+[data-sd-animate] {
+  display: inline-block;
+  white-space: pre-wrap;
+  --shimmer-text-color: currentColor;
+  --shimmer-highlight-color: var(--foreground);
+}
+:root {
+  --foreground: #222;
+}

@@ -1,22 +1,45 @@
 {
   "name": "solid-streamdown",
   "version": "1.0.1",
-  "description": "Streaming Markdown renderer for SolidJS — port of Vercel's Streamdown",
+  "description": "Streaming Markdown renderer for SolidJS \u2014 port of Vercel's Streamdown",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index/index.js",
+  "module": "./dist/index/index.js",
+  "types": "./dist/index/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index/index.d.ts",
+      "solid": "./dist/index/index.jsx",
+      "browser": {
+        "development": "./dist/index/dev.js",
+        "import": "./dist/index/index.js"
+      },
+      "node": "./dist/index/server.js",
+      "import": "./dist/index/index.js"
     },
-    "./styles.css": "./styles.css"
+    "./styles.css": "./styles.css",
+    "./code": {
+      "types": "./dist/code/index.d.ts",
+      "import": "./dist/code/index.js"
+    },
+    "./math": {
+      "types": "./dist/math/index.d.ts",
+      "import": "./dist/math/index.js"
+    },
+    "./cjk": {
+      "types": "./dist/cjk/index.d.ts",
+      "import": "./dist/cjk/index.js"
+    },
+    "./mermaid": {
+      "types": "./dist/mermaid/index.d.ts",
+      "import": "./dist/mermaid/index.js"
+    }
   },
   "files": [
     "dist",
     "styles.css",
-    "ATTRIBUTION.md"
+    "ATTRIBUTION.md",
+    "LICENSE-STREAMDOWN"
   ],
   "scripts": {
     "dev": "tsup --watch",
@@ -24,13 +47,22 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "check:fix": "prettier --write src/*.ts src/*.tsx src/plugins src/styles.css test/streamdown.test.tsx test/browser package.json tsup.config.ts playwright.config.ts vitest.config.ts README.md docs/streamdown-parity.md ATTRIBUTION.md styles.css",
+    "test:browser": "playwright test"
   },
   "peerDependencies": {
     "solid-js": "^1.8.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@streamdown/cjk": "1.0.3",
+    "@streamdown/code": "2.0.0",
+    "@streamdown/math": "1.0.3",
+    "@streamdown/mermaid": "1.0.3",
+    "@types/hast": "^3.0.4",
     "jsdom": "^29.0.1",
+    "prettier": "^3.9.9",
     "solid-js": "^1.9.5",
     "tsup": "^8.4.0",
     "tsup-preset-solid": "^2.2.0",
@@ -39,11 +71,25 @@
     "vitest": "^3.1.1"
   },
   "dependencies": {
-    "unified": "^11.0.5",
-    "remark-parse": "^11.0.0",
+    "comma-separated-tokens": "^2.0.3",
+    "dompurify": "^3.4.16",
+    "hast-util-to-jsx-runtime": "^2.3.6",
+    "katex": "^0.16.27",
+    "mdast-util-gfm-autolink-literal": "^2.0.1",
+    "mermaid": "^11.16.1",
+    "property-information": "^7.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-cjk-friendly": "^2.3.1",
+    "remark-cjk-friendly-gfm-strikethrough": "^2.3.1",
     "remark-gfm": "^4.0.0",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.1",
-    "hast-util-to-jsx-runtime": "^2.3.6"
+    "remend": "1.4.0",
+    "shiki": "^4.4.3",
+    "space-separated-tokens": "^2.0.2",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0"
   },
   "keywords": [
     "solid",
