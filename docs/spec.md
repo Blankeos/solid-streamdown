@@ -6,4 +6,4 @@ Implemented areas include reactive Markdown children and active-stream state, st
 
 See [configuration](configuration.mdx), [components](components.mdx), [security](security.mdx), and [the evidence checklist](streamdown-parity.md). Source and mapped fixtures document implementation; final command results are recorded separately. No exhaustive security audit, universal hydration guarantee, constant-time parsing or comparative performance equivalence is claimed.
 
-Documentation remains content-only Gittydocs 0.0.6. Installation uses a reviewed built checkout rather than assuming the npm registry contains this fork. No custom documentation UI, deployment or publishing is part of this scope.
+Documentation remains content-only Gittydocs 0.0.7. Installation uses a reviewed built checkout rather than assuming the npm registry contains this fork. No custom documentation UI, deployment or publishing is part of this scope.

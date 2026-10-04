@@ -3,8 +3,6 @@ title: Termination
 description: Settle responses and reset for the next stream.
 ---
 
-# Termination
-
 For direct `Streamdown`, stop appending text and set `isAnimating` to false when your transport finishes or fails. Streaming mode can still repair a settled incomplete string; use static mode or disable repair when you need the exact unmodified final Markdown.
 
 For `createMarkdownStream`, call `end()` on completion. `reset()` clears accumulated content and prepares reuse. Transport cancellation remains application-owned. Async highlighting or Mermaid tasks may already be running; the renderer must invalidate stale results rather than assuming the provider supports abort.

@@ -3,8 +3,6 @@ title: Memoization
 description: Content-keyed block parsing with native Solid ownership.
 ---
 
-# Memoization
-
 Solid components execute once; reactive computations update DOM through signals and memos. Do not add React `memo`, dependency arrays or `useCallback`.
 
 Streaming `Streamdown` uses stable per-index block owners and content-keyed parsing memos. Appending to the final block need not re-run consumer parsing plugins or replace earlier unchanged hosts. Animation transforms operate on a cloned parsed tree, preserving the cached base tree. `parseMarkdownIntoBlocksFn` and `BlockComponent` customize segmentation and rendering.

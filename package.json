@@ -53,8 +53,8 @@
     "test:types": "tsc -p test/typechecks/tsconfig.json",
     "test:ssr": "node test/browser/ssr-smoke.mjs",
     "test:hydration": "playwright test --config test/browser/hydration.config.ts",
-    "docs:dev": "bunx gittydocs@0.0.6 dev ./docs",
-    "docs:build": "bunx gittydocs@0.0.6 build ./docs --out ./.docs-dist"
+    "docs:dev": "bunx gittydocs@0.0.7 dev ./docs",
+    "docs:build": "bunx gittydocs@0.0.7 build ./docs --out ./.docs-dist"
   },
   "peerDependencies": {
     "solid-js": "^1.8.0"

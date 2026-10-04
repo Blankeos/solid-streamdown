@@ -1,12 +1,70 @@
 ---
 title: Styling
-description: Package styles and application integration.
+description: Package styles, native CSS variables and optional Tailwind integration.
 ---
 
-# Styling
+## Import the package stylesheet
 
-Import `solid-streamdown/styles.css` once. Import KaTeX CSS separately for math. Use `class` (or the compatibility alias `className`) on the wrapper; do not assume a React-specific styling setup or Tailwind installation is required to render Markdown.
+Import `solid-streamdown/styles.css` once in your application. Import KaTeX CSS separately when using math:
 
-Inspect the shipped stylesheet and DOM before overriding selectors. Custom component styles and custom animation keyframes belong to your application.
+```tsx
+import "solid-streamdown/styles.css";
+// Only when using the math provider:
+import "katex/dist/katex.min.css";
+```
 
-`prefix` prefixes generated utility classes after flattened class merging, including scoped overlay presentation. Root whitespace and edge resets are scoped to the native renderer. It does not replace package CSS or establish exhaustive CSS parity. See composition and renderer-fidelity fixtures in [verification](/streamdown-parity).
+The native stylesheet supplies animation keyframes, carets, Markdown presentation, controls and overlay styles. Tailwind is **not required** to render Markdown or use these native styles. Use `class` (or the compatibility alias `className`) on the wrapper; Solid `class` takes precedence.
+
+## Native theme variables
+
+The shipped stylesheet uses `--sd-*` variables with built-in fallbacks. These are the native fork's styling hooks, not a promise that every upstream theme token has identical behavior. Inspect `src/styles.css` and the rendered DOM before overriding selectors.
+
+```css
+:root {
+  --sd-background: #ffffff;
+  --sd-foreground: #18181b;
+  --sd-border: #d4d4d8;
+  --sd-muted: #71717a;
+  --sd-muted-background: #f4f4f5;
+  --sd-sidebar: #f4f4f5;
+  --sd-hover: #e4e4e7;
+  --sd-primary: #2563eb;
+  --sd-primary-foreground: #ffffff;
+}
+
+.dark {
+  color-scheme: dark;
+  --sd-background: #18181b;
+  --sd-foreground: #fafafa;
+  --sd-border: #3f3f46;
+  --sd-muted: #a1a1aa;
+  --sd-muted-background: #27272a;
+  --sd-sidebar: #27272a;
+  --sd-hover: #3f3f46;
+  --sd-primary: #60a5fa;
+  --sd-primary-foreground: #18181b;
+}
+```
+
+Set the variables on a shared ancestor such as the document root if fullscreen or confirmation overlays use the default body portal. Variables scoped only to the renderer wrapper do not inherit into a body-mounted portal. Alternatively, configure `portal` to target a suitable themed element. Syntax highlighting uses the separate `shikiTheme` light/dark pair; CSS tokens do not replace those themes.
+
+Animation timing uses `--sd-animation`, `--sd-duration`, `--sd-easing` and `--sd-delay`; list markers have their own `--sd-marker-duration`, `--sd-marker-easing` and `--sd-marker-delay`. The renderer stamps these values on animated units. Prefer the checked `animated` options for timing and define custom `@keyframes sd-<name>` in your application. See [animation](/animation).
+
+## Optional Tailwind utilities
+
+The renderers also emit utility classes for typography and layout. If your application uses Tailwind, include the installed library's built files in class detection. For Tailwind v4, a stylesheet at `src/app.css` can use:
+
+```css
+@import "tailwindcss";
+@source "../node_modules/solid-streamdown/dist";
+```
+
+`@source` paths are relative to the stylesheet. Adjust the path for your application structure or a linked package's real location. For Tailwind v3, include `./node_modules/solid-streamdown/dist/**/*.{js,jsx}` in your existing configuration's `content` array. Do not replace your application's own content paths.
+
+Upstream-style utility classes such as `text-muted-foreground`, `bg-sidebar` and `border-border` need corresponding application theme colors if you want Tailwind to generate them. Those optional Tailwind tokens are distinct from the native `--sd-*` variables. Existing design-system themes can supply them; no Tailwind setup is mandatory for the native stylesheet.
+
+## Wrapper and component overrides
+
+Custom component styles and typography belong to your application. Keep semantic headings, code, math and overflow behavior intact; test your theme on narrow screens, in RTL and with reduced motion.
+
+`prefix` prefixes generated utility classes after flattened class merging, including scoped overlay presentation. Root whitespace and edge resets are scoped to the native renderer. Prefixing does not rename `.streamdown` selectors or `--sd-*` variables, replace package CSS or establish exhaustive CSS parity. See composition and renderer-fidelity fixtures in [verification](/streamdown-parity).

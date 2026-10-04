@@ -18,7 +18,17 @@ Verified against the completed full-port checkout:
 | `bun run test:browser`                                    | 18 Chromium tests passed across 9 files               |
 | `bun run test:hydration`                                  | 1 separate Chromium hydration test passed             |
 | `bun run test:ssr`                                        | Node SSR without browser globals passed               |
-| Gittydocs 0.0.6 build                                     | 30 static routes, 30 Markdown exports and `/llms.txt` |
+| Gittydocs 0.0.7 build                                     | 30 static routes, 30 Markdown exports and `/llms.txt` |
+
+The published Gittydocs 0.0.7 docs-only rebuild produced 30 static routes, 30
+Markdown exports and `/llms.txt`. Configuration exports retain all 41
+`StreamdownProps` fields across four manual type tables, and getting-started
+exports retain all npm/pnpm/Bun peer and built-tarball install commands. This
+documentation rebuild does not rerun or replace the full-port library results
+above; library source is unchanged. Browser checks against the built docs additionally
+verified synchronized package-manager tabs, keyboard selection and persistence,
+all 41 native prop disclosures, keyboard expansion, and mobile layout without
+horizontal document overflow or page errors.
 
 An isolated `npm pack` installation also verified the root exports, all four
 plugin subpaths and Node SSR, without relying on this checkout’s node_modules.

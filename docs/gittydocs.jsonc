@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/blankeos/gittydocs/v0.0.6/gittydocs.schema.json",
+  "$schema": "https://raw.githubusercontent.com/blankeos/gittydocs/gittydocs%400.0.7/gittydocs.schema.json",
   "site": {
     "name": "Solid Streamdown",
     "description": "Native SolidJS port targeting React Streamdown 2.7.0.",

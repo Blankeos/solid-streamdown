@@ -3,51 +3,257 @@ title: Configuration
 description: Core props and the exact upstream target.
 ---
 
-# Configuration
-
 The target is React Streamdown **2.7.0**, not an unversioned latest API. Exported declarations in your built checkout are the authority for available props. The functional surface is implemented; [the parity checklist](/streamdown-parity) maps source and fixtures and records final verification separately.
 
-| Prop                      | Streamdown default                      | Purpose                                       |
-| ------------------------- | --------------------------------------- | --------------------------------------------- |
-| `children`                | empty string                            | Reactive Markdown text                        |
-| `mode`                    | `"streaming"`                           | Streaming repair or static rendering          |
-| `parseIncompleteMarkdown` | `true`                                  | Incomplete Markdown repair                    |
-| `isAnimating`             | `false`                                 | Active stream state                           |
-| `animated`                | `false`                                 | Boolean or animation options                  |
-| `caret`                   | absent                                  | `"block"` or `"circle"`                       |
-| `class` / `className`     | absent                                  | Wrapper class; Solid `class` wins             |
-| `plugins`                 | absent                                  | Native feature providers and custom renderers |
-| `components`              | absent                                  | Native Solid element components               |
-| `shikiTheme`              | provider themes, then GitHub light/dark | Light/dark pair                               |
-| `lineNumbers`             | `true`                                  | Highlighted code line numbers                 |
-| `controls`                | enabled                                 | Interactive action configuration              |
-| `codeBlockMaxHeight`      | `400`                                   | Code viewport height                          |
-| `tableMaxHeight`          | `300`                                   | Table viewport height                         |
-| `translations` / `icons`  | built-in defaults                       | Labels and Solid icons                        |
-| `dir`                     | absent                                  | `"ltr"`, `"rtl"`, or `"auto"`                 |
+Defaults below describe native `Streamdown`, not the [legacy interface](/legacy). Omitted optional props have no configured value unless a fallback is described. These manual maps follow `src/types.ts` and the renderer defaults; they are display strings, not executable configuration.
 
-`remarkPlugins`, `rehypePlugins`, `remarkRehypeOptions`, `urlTransform`, and element filtering customize the processing pipeline. Their trust boundary is described in [security](/security). Do not equate element filtering with sanitation.
+## Core rendering and animation
 
-| Additional prop             | Default             | Purpose                                         |
-| --------------------------- | ------------------- | ----------------------------------------------- |
-| `remend`                    | remend defaults     | Incomplete repair options                       |
-| `normalizeHtmlIndentation`  | `false`             | Normalize indented HTML blocks                  |
-| `allowedTags`               | absent              | Extend default sanitized tags/attributes        |
-| `literalTagContent`         | absent              | Preserve specified tag contents as literal text |
-| `fallbackComponent`         | absent              | Solid fallback for unmapped elements            |
-| `prefix`                    | absent              | Prefix generated utility classes                |
-| `disableAutolinkProtocols`  | absent              | Disable selected automatic protocol links       |
-| `BlockComponent`            | native `Block`      | Streaming block renderer                        |
-| `parseMarkdownIntoBlocksFn` | built-in splitter   | Streaming block segmentation                    |
-| `linkSafety`                | `{ enabled: true }` | Navigation checks and confirmation              |
-| `portal`                    | browser body        | Overlay target element or getter                |
-| `skipHtml`                  | `false`             | Remove raw HTML nodes                           |
-| `mermaid`                   | absent              | Diagram config and Solid error component        |
+<TypeTable
+  caption="Core rendering and animation"
+  type={{
+    children: {
+      type: "string",
+      description: "Reactive Markdown text; not an arbitrary Solid child tree.",
+      default: '""',
+    },
+    mode: {
+      type: "StreamdownMode",
+      description:
+        "Streaming repair and block rendering, or a single static document.",
+      default: '"streaming"',
+    },
+    parseIncompleteMarkdown: {
+      type: "boolean",
+      description:
+        "Repair incomplete Markdown in streaming mode, including after settling. Static mode never repairs.",
+      default: "true",
+    },
+    isAnimating: {
+      type: "boolean",
+      description: "Active stream state; static mode suppresses animation.",
+      default: "false",
+    },
+    animated: {
+      type: "AnimatedProp",
+      description:
+        "Opt-in reveal: boolean or AnimateOptions. Omitted is disabled; true uses the built-in animation defaults.",
+    },
+    caret: {
+      type: '"block" | "circle"',
+      description: "Opt-in terminal caret while animating.",
+    },
+    onAnimationStart: {
+      type: "() => void",
+      description:
+        "Called when isAnimating becomes true; suppressed in static mode.",
+    },
+    onAnimationEnd: {
+      type: "() => void",
+      description:
+        "Called when isAnimating transitions from true to false; suppressed in static mode.",
+    },
+    class: {
+      type: "string",
+      description: "Wrapper class; takes precedence over className.",
+    },
+    className: {
+      type: "string",
+      description: "Compatibility alias for the wrapper class.",
+    },
+    dir: {
+      type: '"ltr" | "rtl" | "auto"',
+      description:
+        "Explicit direction or automatic per-block detection; code remains LTR.",
+    },
+    remend: {
+      type: "RemendOptions",
+      description:
+        "Incomplete Markdown repair options passed to remend; omission uses its defaults.",
+    },
+  }}
+/>
+
+## Plugins and components
+
+<TypeTable
+  caption="Plugins and components"
+  type={{
+    plugins: {
+      type: "PluginConfig",
+      description:
+        "Native code, math, CJK, Mermaid and custom renderer providers.",
+    },
+    components: {
+      type: "Components",
+      description: "Native Solid element overrides, including inlineCode.",
+    },
+    fallbackComponent: {
+      type: "Component<Record<string, unknown> & ExtraProps>",
+      description: "Solid fallback for unmapped elements.",
+    },
+    shikiTheme: {
+      type: "[ThemeInput, ThemeInput]",
+      description:
+        "Light/dark themes: explicit prop, then code provider themes, then the built-in pair.",
+      default: '["github-light", "github-dark"] (without provider themes)',
+    },
+    mermaid: {
+      type: "MermaidOptions",
+      description: "Diagram configuration and a native Solid error component.",
+    },
+    BlockComponent: {
+      type: "Component<BlockProps>",
+      description: "Streaming block renderer; ignored in static mode.",
+      default: "Block",
+    },
+    parseMarkdownIntoBlocksFn: {
+      type: "(markdown: string) => string[]",
+      description: "Streaming block segmentation; ignored in static mode.",
+      default: "parseMarkdownIntoBlocks",
+    },
+  }}
+/>
+
+## Markdown pipeline and HTML safety
+
+<TypeTable
+  caption="Markdown pipeline and HTML safety"
+  type={{
+    remarkPlugins: {
+      type: "PluggableList",
+      description: "Replaces the default remark list, not an append-only list.",
+      default: "defaultRemarkPluginsArray (GFM and code metadata)",
+    },
+    rehypePlugins: {
+      type: "PluggableList",
+      description:
+        "Replaces raw HTML parsing, sanitation and hardening defaults; trusted application configuration.",
+      default: "defaultRehypePluginsArray (raw, sanitize, harden)",
+    },
+    remarkRehypeOptions: {
+      type: "Readonly<RemarkRehypeOptions>",
+      description:
+        "Overrides for mdast-to-hast conversion; allowDangerousHtml defaults to true before raw HTML sanitation.",
+    },
+    normalizeHtmlIndentation: {
+      type: "boolean",
+      description: "Normalize indented HTML blocks before parsing.",
+      default: "false",
+    },
+    allowedTags: {
+      type: "AllowedTags",
+      description:
+        "Extend default sanitized tags and attributes; use canonical HAST names such as dataId.",
+    },
+    literalTagContent: {
+      type: "string[]",
+      description: "Preserve specified tag contents as literal text.",
+    },
+    disableAutolinkProtocols: {
+      type: "string[]",
+      description: "Disable selected automatic protocol links.",
+    },
+    skipHtml: {
+      type: "boolean",
+      description:
+        "Remove raw HTML nodes; distinct from sanitizing parsed HTML.",
+      default: "false",
+    },
+    urlTransform: {
+      type: "StreamdownUrlTransform",
+      description:
+        "Receives (url, key, node), where node is a HAST element. The default passes URLs through after the default sanitation and hardening pipeline; replacing that pipeline changes the safety boundary.",
+      default: "defaultUrlTransform (passthrough)",
+    },
+    allowedElements: {
+      type: "readonly string[]",
+      description:
+        "Optional allowlist of element names; not a sanitation replacement.",
+    },
+    disallowedElements: {
+      type: "readonly string[]",
+      description: "Optional blocklist of element names.",
+    },
+    allowElement: {
+      type: "AllowElement",
+      description:
+        "Element filter receives (element, index, parent) after name filtering.",
+    },
+    unwrapDisallowed: {
+      type: "boolean",
+      description:
+        "Keep children of disallowed elements instead of removing their subtree.",
+      default: "false",
+    },
+  }}
+/>
+
+## Controls and overlays
+
+<TypeTable
+  caption="Controls and overlays"
+  type={{
+    controls: {
+      type: "ControlsConfig",
+      description:
+        "Enable all native actions, disable them, or configure individual feature controls.",
+      default: "true",
+    },
+    lineNumbers: {
+      type: "boolean",
+      description: "Highlighted code line numbers.",
+      default: "true",
+    },
+    codeBlockMaxHeight: {
+      type: "number | string",
+      description: "Code viewport maximum height; numbers are pixel values.",
+      default: "400",
+    },
+    tableMaxHeight: {
+      type: "number | string",
+      description: "Table viewport maximum height; numbers are pixel values.",
+      default: "300",
+    },
+    translations: {
+      type: "Partial<StreamdownTranslations>",
+      description:
+        "Override individual built-in labels; omitted entries retain defaults.",
+    },
+    icons: {
+      type: "Partial<IconMap>",
+      description:
+        "Override individual native Solid icons; omitted entries retain defaults.",
+    },
+    prefix: {
+      type: "string",
+      description:
+        "Prefix generated utility classes after flattened class merging, including overlays.",
+    },
+    linkSafety: {
+      type: "LinkSafetyConfig",
+      description:
+        "Navigation checks and confirmation. False from onLinkCheck requests confirmation, not mandatory denial.",
+      default: "{ enabled: true }",
+    },
+    portal: {
+      type: "PortalTarget",
+      description:
+        "Overlay target element or getter. Omission (or a null target) uses the browser body; SSR does not create a portal.",
+    },
+  }}
+/>
+
+Pipeline configuration is a trust boundary. Read [security](/security) before replacing plugins or URL policies; element filtering is not sanitation.
 
 Use exported types to keep configuration checked:
 
 ```tsx
-import type { StreamdownProps, LinkSafetyConfig } from "solid-streamdown";
+import {
+  Streamdown,
+  type StreamdownProps,
+  type LinkSafetyConfig,
+} from "solid-streamdown";
 
 const linkSafety: LinkSafetyConfig = {
   enabled: true,

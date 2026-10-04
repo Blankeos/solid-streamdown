@@ -3,8 +3,6 @@ title: Maintaining the fork
 description: Pinned sources, validation commands, and content-only docs.
 ---
 
-# Maintaining the fork
-
 ## Sources and baseline
 
 React baseline: `vercel/streamdown`, package `streamdown@2.7.0`, reference commit `08da224`. Read its `packages/streamdown` source, plugin packages and `apps/website/content/docs` alongside types. Live `streamdown.ai` docs may advance beyond that baseline. Original Solid upstream: `vherbruck/solid-streamdown`; maintained fork: `Blankeos/solid-streamdown`.
@@ -33,11 +31,13 @@ Browser tests need Playwright Chromium installed (`bunx playwright install chrom
 These are content-only Gittydocs pages and `gittydocs.jsonc`; no custom application, UI rewrite or domain is configured.
 
 ```bash
-bunx gittydocs@0.0.6 dev ./docs
-bunx gittydocs@0.0.6 build ./docs --out /tmp/solidstreamdown-docs-dist
+bun run docs:dev
+bun run docs:build
+# Optional isolated output using the published CLI:
+bunx gittydocs@0.0.7 build ./docs --out /tmp/solid-streamdown-docs-v7
 ```
 
-The pinned CLI supports `build [gittydocsSource] --out <path>`. It supplies its own runtime dependencies; `docs:dev` and `docs:build` wrap the pinned CLI. `docs:build` writes the ignored `.docs-dist/` directory, which is excluded from package output. Check generated routes, navigation, Markdown exports and `/llms.txt` before deployment. Maintenance note: migrate install tabs (npm, pnpm, bun) and type tables to Gittydocs elements when Gittydocs ships them. Until then keep plain Markdown tables, code blocks and single Bun install examples; do not implement custom UI or use unsupported components. Building locally is not publishing. Do not invent a documentation hostname or deploy without authorization.
+Gittydocs **0.0.7** supplies import-free `Tabs`, `Tab` and `TypeTable`. The pinned CLI supports `build [gittydocsSource] --out <path>`. It supplies its own runtime dependencies; `docs:dev` and `docs:build` wrap the pinned CLI. `docs:build` writes the ignored `.docs-dist/` directory, which is excluded from package output. Check generated routes, navigation, Markdown exports and `/llms.txt` before deployment. Use native package-manager tabs with string `items`, matching `Tab value`s and `groupId="package-manager" persist`; keep blank lines around panel Markdown. Use literal manual `TypeTable type={{ ... }}` maps with string types, defaults and descriptions so Markdown exports and `/llms.txt` retain every field. Group API rows by purpose rather than creating one long table. Check maps against actual declarations and runtime defaults; do not fabricate required badges or defaults. `AutoTypeTable` only reads sources inside the docs content root: it cannot read `../src/types.ts`. Do not duplicate library declarations into docs just to enable generation. Building locally is not publishing. Do not invent a documentation hostname or deploy without authorization.
 
 ## Evidence policy
 

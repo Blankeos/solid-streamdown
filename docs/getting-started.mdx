@@ -3,8 +3,6 @@ title: Getting started
 description: Build and link the maintained fork, then render Markdown.
 ---
 
-# Getting started
-
 ## Use the fork, not an assumed npm release
 
 ```bash
@@ -17,7 +15,74 @@ bun link
 bun link solid-streamdown
 ```
 
-Install `solid-js` in your application if it is not already present. Linking uses the local built package and is appropriate for development; rebuild the library when source changes. For reproducible integration, pin a reviewed fork commit and distribute its built package through your own package workflow. Do not assume an unpublished fork can be installed from npm, or that a Git URL installation automatically builds `dist`.
+The fork's library scripts require **Bun**. Linking uses the local built package and is appropriate for development; rebuild the library when source changes. The application can use npm, pnpm or Bun.
+
+Install the Solid peer dependency in your application if it is not already present:
+
+<Tabs items={["npm", "pnpm", "bun"]} groupId="package-manager" persist label="Install the Solid peer dependency">
+  <Tab value="npm">
+
+```bash
+npm install solid-js
+```
+
+  </Tab>
+  <Tab value="pnpm">
+
+```bash
+pnpm add solid-js
+```
+
+  </Tab>
+  <Tab value="bun">
+
+```bash
+bun add solid-js
+```
+
+  </Tab>
+</Tabs>
+
+## Integrate a built package
+
+For reproducible integration, pin a reviewed fork commit and package its build. Do not assume a Git URL installation builds `dist`. From the cloned fork, replace the placeholder with the commit you reviewed:
+
+```bash
+git checkout <reviewed-commit>
+bun install
+bun run build
+npm pack
+```
+
+The current manifest is still named `solid-streamdown` at version `1.0.1`, so `npm pack` produces `solid-streamdown-1.0.1.tgz`. This is a locally built fork artifact, **not** a new registry release. Use the filename reported by `npm pack` if the version changes. Preserve the reviewed commit and artifact in your production dependency workflow.
+
+Run one of these in your Solid application, replacing the path with your artifact's actual location:
+
+<Tabs items={["npm", "pnpm", "bun"]} groupId="package-manager" persist label="Install the built fork package">
+  <Tab value="npm">
+
+```bash
+npm install /path/to/solid-streamdown-1.0.1.tgz solid-js
+```
+
+  </Tab>
+  <Tab value="pnpm">
+
+```bash
+pnpm add /path/to/solid-streamdown-1.0.1.tgz solid-js
+```
+
+  </Tab>
+  <Tab value="bun">
+
+```bash
+bun add /path/to/solid-streamdown-1.0.1.tgz solid-js
+```
+
+  </Tab>
+</Tabs>
+
+Do not use a bare registry install to obtain this unpublished maintained fork. The local Bun link above remains the fast development route; the built tarball works with any of these application package managers.
 
 ## Render a reactive string
 

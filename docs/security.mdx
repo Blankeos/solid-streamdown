@@ -3,8 +3,6 @@ title: Security
 description: Content trust, sanitation, and extension boundaries.
 ---
 
-# Security
-
 Treat AI-generated Markdown as untrusted input. The current default pipeline processes raw HTML through `rehype-raw`, `rehype-sanitize` and `rehype-harden`. This differs from the initial Solid renderer, which disabled raw HTML. Sanitation uses an extended GitHub schema (including code metastrings, `tel` and the internal `streamdown` protocol, with no clobber prefix); hardening defaults allow all image/link prefixes and protocols, plus data images. The sanitation stage and default URL transform still reject executable URL schemes. This is not an origin safelist or a comprehensive security audit.
 
 Explicit `rehypePlugins` replace defaults rather than appending. Explicit `remarkPlugins` also replace their default list. Preserve the appropriate parsing, sanitation, hardening and GFM stages when composing replacements. `allowedTags` extends the default sanitation pipeline; its behavior must not be assumed with a custom plugin list. Attribute names in `allowedTags` use HAST canonical properties, such as `dataId`, not arbitrary DOM spelling. Allowed containers do not exempt nested hostile content from sanitation.
