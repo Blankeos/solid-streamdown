@@ -22,7 +22,7 @@ async function expectReport(page: Page) {
   await expect(reveal.locator("pre code")).toHaveText("2026-10-04 $1,234.56\n");
 }
 
-test("Quarta char reveal progresses through rapid appends, drains backlog, and cleans up", async ({
+test("Custom char reveal progresses through rapid appends, drains backlog, and cleans up", async ({
   page,
 }) => {
   await page.goto("http://localhost:5198/test/browser/?reveal");
@@ -110,7 +110,7 @@ test("Quarta char reveal progresses through rapid appends, drains backlog, and c
   expect(await page.locator(".reveal").textContent()).toBe(drained.text);
 });
 
-test("Quarta custom reveal honors reduced motion during streaming", async ({
+test("Custom custom reveal honors reduced motion during streaming", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });

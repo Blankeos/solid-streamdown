@@ -66,7 +66,7 @@ function Reveal() {
           plugins={{ cjk: nativeCjk }}
           isAnimating={animating()}
           animated={{
-            animation: "quartaReveal",
+            animation: "customReveal",
             duration: 450,
             easing: "ease-out",
             sep: "char",

@@ -4,7 +4,7 @@
  * Import this CSS for the streaming caret and word-animation keyframes.
  * All styles are scoped under the .streamdown class. Custom animations use
  * the same contract: define `@keyframes sd-<name>` in the app (for example
- * `sd-quartaReveal`) and pass `animated={{ animation: "<name>" }}`.
+ * `sd-customReveal`) and pass `animated={{ animation: "<name>" }}`.
  */
 
 /* Caret (blinking cursor) on the terminal host only */

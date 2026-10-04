@@ -203,7 +203,7 @@ describe("StreamMarkdown renderer", () => {
     const { container, cleanup } = mount(() => (
       <StreamMarkdown
         stream={stream}
-        animated={{ animation: "quartaReveal", sep: "char" }}
+        animated={{ animation: "customReveal", sep: "char" }}
         class="custom-wrap"
       />
     ));
@@ -217,7 +217,7 @@ describe("StreamMarkdown renderer", () => {
     // Char mode wraps graphemes; custom animation name flows to CSS vars.
     const spans = animateSpans(container);
     expect(spans.length).toBeGreaterThanOrEqual(2);
-    expect(container.innerHTML).toContain("sd-quartaReveal");
+    expect(container.innerHTML).toContain("sd-customReveal");
 
     stream.write(" there");
     await flush();
@@ -347,14 +347,14 @@ describe("StreamMarkdown renderer", () => {
     cleanup();
   });
 
-  it("preserves Quarta char reveal without remounting across appends", async () => {
-    // Char-mode owner with custom `quartaReveal` (450ms/8ms): same DOM,
+  it("preserves Custom char reveal without remounting across appends", async () => {
+    // Char-mode owner with custom `customReveal` (450ms/8ms): same DOM,
     // in-flight reveal continues (currentTime advances in browser), new chars
     // start fresh. Zeroing would abort each 450ms reveal after ~20ms (user
     // sees no reveal). No other test covers char granularity + custom
     // keyframes + cleanup without remount.
-    const quarta = {
-      animation: "quartaReveal",
+    const customRevealOptions = {
+      animation: "customReveal",
       duration: 450,
       easing: "ease-in-out",
       sep: "char" as const,
@@ -366,7 +366,7 @@ describe("StreamMarkdown renderer", () => {
     const { container, cleanup } = mount(() => (
       <StreamMarkdown
         content={content()}
-        animated={quarta}
+        animated={customRevealOptions}
         isAnimating={animating()}
       />
     ));
@@ -537,8 +537,8 @@ describe("StreamMarkdown renderer", () => {
     // stable offsets, bounded tail delays. Credible failure: zeroing prefix
     // to 0ms, or text-keyed preservation colliding on repeats ("Salary",
     // "45", "00").
-    const quarta = {
-      animation: "quartaReveal",
+    const customRevealOptions = {
+      animation: "customReveal",
       duration: 450,
       easing: "ease-in-out",
       sep: "char" as const,
@@ -552,7 +552,7 @@ describe("StreamMarkdown renderer", () => {
       `| Name | Amount |\n| --- | ---: |\n| Salary Apr | 45000.00 |\n\n\`\`\`ts\nconst salary = 45000.00;\n\`\`\`\n`;
     const [content, setContent] = createSignal(prefix);
     const { container, cleanup } = mount(() => (
-      <StreamMarkdown content={content()} animated={quarta} isAnimating />
+      <StreamMarkdown content={content()} animated={customRevealOptions} isAnimating />
     ));
     await flush();
     await flush();

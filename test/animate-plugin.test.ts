@@ -113,7 +113,7 @@ describe("createAnimatePlugin", () => {
 
   it("applies custom animation, duration, easing, and stagger delays", () => {
     const plugin = createAnimatePlugin({
-      animation: "quartaReveal",
+      animation: "customReveal",
       duration: 300,
       easing: "ease-out",
       stagger: 50,
@@ -122,7 +122,7 @@ describe("createAnimatePlugin", () => {
     const spans = animateSpans(tree);
     expect(spans).toHaveLength(3);
     for (const span of spans) {
-      expect(styleOf(span)).toContain("sd-quartaReveal");
+      expect(styleOf(span)).toContain("sd-customReveal");
       expect(styleOf(span)).toContain("300ms");
       expect(styleOf(span)).toContain("ease-out");
     }

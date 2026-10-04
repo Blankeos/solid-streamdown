@@ -1,5 +1,5 @@
-/* Quarta's custom reveal, copied locally so this fixture is self-contained. */
-@keyframes sd-quartaReveal {
+/* Custom reveal fixture, defined locally to keep the test self-contained. */
+@keyframes sd-customReveal {
   0% {
     color: var(--shimmer-highlight-color);
     opacity: 0;

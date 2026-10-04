@@ -61,7 +61,7 @@ export interface StreamMarkdownProps {
    * even when `true`. When omitted, defaults to `effectiveIsAnimating`
    * (true while animating/streaming, false after settle) so completed
    * strings stay raw by default while explicit `true` keeps a React-parity
-   * repaired final. Quarta history passes `true` for consistency.
+   * repaired final. Consumers can pass `true` for consistent history rendering.
    */
   parseIncompleteMarkdown?: boolean;
   /** Called when animating transitions false → true (suppressed in static mode). */
