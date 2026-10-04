@@ -16,10 +16,43 @@ jobs:
         with:
           bun-version: latest
 
-      - run: bun install
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: bun install --frozen-lockfile
 
       - run: bun run typecheck
 
       - run: bun run build
 
       - run: bun run test:run
+
+      - run: bun run test:types
+
+      - run: bun run test:ssr
+
+      - run: bunx playwright install --with-deps chromium
+
+      - run: bun run test:browser
+
+      - run: bun run test:hydration
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: test-results/
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: bun run docs:build

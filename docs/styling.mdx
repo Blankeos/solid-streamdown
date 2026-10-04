@@ -1,0 +1,12 @@
+---
+title: Styling
+description: Package styles and application integration.
+---
+
+# Styling
+
+Import `solid-streamdown/styles.css` once. Import KaTeX CSS separately for math. Use `class` (or the compatibility alias `className`) on the wrapper; do not assume a React-specific styling setup or Tailwind installation is required to render Markdown.
+
+Inspect the shipped stylesheet and DOM before overriding selectors. Custom component styles and custom animation keyframes belong to your application.
+
+`prefix` prefixes generated utility classes after flattened class merging, including scoped overlay presentation. Root whitespace and edge resets are scoped to the native renderer. It does not replace package CSS or establish exhaustive CSS parity. See composition and renderer-fidelity fixtures in [verification](/streamdown-parity).

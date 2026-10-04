@@ -6,12 +6,16 @@ for (const provider of ["published", "native"]) {
     page,
   }) => {
     await page.goto(`http://localhost:5198/test/browser/?plugins=${provider}`);
-    await expect(page.locator("strong")).toHaveText("中文。");
+    await expect(page.locator("span[data-streamdown=strong]")).toHaveText(
+      "中文。",
+    );
     await expect(page.locator(".katex math")).toHaveCount(1);
     await expect(
       page.locator(".sd-code span[style*='--shiki-dark']").first(),
     ).toBeVisible();
-    await expect(page.locator("[data-streamdown=mermaid] svg")).toBeVisible();
+    await expect(
+      page.locator("[data-streamdown=mermaid] .sd-panzoom-content svg"),
+    ).toBeVisible();
     await expect(page.locator("[data-streamdown=mermaid]")).toContainText(
       "Alpha",
     );

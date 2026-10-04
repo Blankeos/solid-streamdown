@@ -24,6 +24,54 @@ const animateSpans = (container: HTMLElement): HTMLElement[] =>
   Array.from(container.querySelectorAll("[data-sd-animate]")) as HTMLElement[];
 
 describe("StreamMarkdown renderer", () => {
+  it("keeps legacy semantic hosts, direct images and opt-in feature defaults", async () => {
+    const { container, cleanup } = mount(() => (
+      <StreamMarkdown
+        content={
+          "**bold** [link](https://example.org) ![inline](https://example.org/image.png)\n\n```text\nsource\n```\n\n| A |\n| --- |\n| b |"
+        }
+      />
+    ));
+    try {
+      await flush();
+      expect(container.querySelector("strong")?.textContent).toBe("bold");
+      expect(container.querySelector("a")?.getAttribute("href")).toBe(
+        "https://example.org",
+      );
+      const image = container.querySelector("img");
+      expect(image?.parentElement?.tagName).toBe("P");
+      expect(image?.getAttribute("src")).toBe("https://example.org/image.png");
+      expect(container.querySelector("button")).toBeNull();
+      expect(container.querySelector("[data-line-number]")).toBeNull();
+      const code = container.querySelector<HTMLElement>(
+        "[data-streamdown=code-block-body]",
+      );
+      expect(code?.style.maxHeight).toBe("none");
+      expect(container.querySelector("table")).not.toBeNull();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("lets caller components override the legacy semantic defaults reactively", async () => {
+    const [override, setOverride] = createSignal(false);
+    const { container, cleanup } = mount(() => (
+      <StreamMarkdown
+        content="**bold**"
+        components={override() ? { strong: "mark" } : undefined}
+      />
+    ));
+    try {
+      expect(container.querySelector("strong")?.textContent).toBe("bold");
+      setOverride(true);
+      await flush();
+      expect(container.querySelector("strong")).toBeNull();
+      expect(container.querySelector("mark")?.textContent).toBe("bold");
+    } finally {
+      cleanup();
+    }
+  });
+
   it("keeps the same word DOM across appends so animations do not replay", async () => {
     const [content, setContent] = createSignal("Hello");
     const { container, cleanup } = mount(() => (
@@ -317,7 +365,9 @@ describe("StreamMarkdown renderer", () => {
     await flush();
     const firstBefore = animateSpans(container)[0];
     const beforeOffset = firstBefore?.getAttribute("data-sd-offset");
-    expect(firstBefore?.getAttribute("style")).toMatch(/--sd-duration:\s*150ms/);
+    expect(firstBefore?.getAttribute("style")).toMatch(
+      /--sd-duration:\s*150ms/,
+    );
     expect(beforeOffset).toBe("0");
     setContent("Hello world foo bar baz qux quux corge grault garply");
     await flush();
@@ -552,7 +602,11 @@ describe("StreamMarkdown renderer", () => {
       `| Name | Amount |\n| --- | ---: |\n| Salary Apr | 45000.00 |\n\n\`\`\`ts\nconst salary = 45000.00;\n\`\`\`\n`;
     const [content, setContent] = createSignal(prefix);
     const { container, cleanup } = mount(() => (
-      <StreamMarkdown content={content()} animated={customRevealOptions} isAnimating />
+      <StreamMarkdown
+        content={content()}
+        animated={customRevealOptions}
+        isAnimating
+      />
     ));
     await flush();
     await flush();

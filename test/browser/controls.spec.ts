@@ -29,24 +29,32 @@ test("native controls copy/export rendered data and reactively respect streaming
   expect(await readFile((await file.path())!, "utf8")).toBe(
     "const answer = 42;",
   );
-  await page.getByRole("combobox", { name: "Copy table" }).selectOption("csv");
-  await page.getByRole("button", { name: "Copy table as CSV" }).click();
+  await page.getByRole("button", { name: "Copy table", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Copy table as CSV" }).click();
   expect(await page.evaluate(() => (window as any).copiedText)).toBe(
     'Name,Value\nalpha,"a,b"',
   );
   const tableDownload = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download table as CSV" }).click();
+  await page
+    .getByRole("button", { name: "Download table", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Download table as CSV" }).click();
   const table = await tableDownload;
   expect(table.suggestedFilename()).toBe("table.csv");
   expect(await readFile((await table.path())!, "utf8")).toBe(
-    'Name,Value\nalpha,"a,b"',
+    '\uFEFFName,Value\nalpha,"a,b"',
   );
   await page.getByRole("button", { name: "Toggle streaming" }).click();
   await expect(copy).toBeDisabled();
   await expect(
     page.getByRole("button", { name: "Download file" }),
   ).toBeDisabled();
-  await expect(page.getByRole("combobox")).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Copy table", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Download table", exact: true }),
+  ).toBeDisabled();
   await page.getByRole("button", { name: "Toggle streaming" }).click();
   await expect(copy).toBeEnabled();
   await page.getByRole("button", { name: "Toggle controls" }).click();
@@ -57,11 +65,11 @@ test("native controls copy/export rendered data and reactively respect streaming
   await expect(page.locator(".streamdown")).toContainText("Filtered");
   await expect(page.getByRole("link", { name: "Link" })).toHaveAttribute(
     "href",
-    "/proxy?url=https%3A%2F%2Fexample.org",
+    "/proxy?url=https%3A%2F%2Fexample.org%2F",
   );
   expect(
     await page
-      .locator("pre")
+      .locator("[data-streamdown=code-block-body]")
       .evaluate((element) => getComputedStyle(element).maxHeight),
   ).toBe("60px");
   await page.getByRole("button", { name: "Toggle streaming" }).click();
@@ -69,19 +77,25 @@ test("native controls copy/export rendered data and reactively respect streaming
   await expect
     .poll(() =>
       page
-        .locator("pre")
+        .locator("[data-streamdown=code-block-body]")
         .evaluate(
           (element) =>
             element.scrollHeight - element.scrollTop - element.clientHeight,
         ),
     )
     .toBeLessThan(2);
-  await page.locator("pre").evaluate((element) => {
-    element.scrollTop = 0;
-    element.dispatchEvent(new Event("scroll"));
-  });
+  await page
+    .locator("[data-streamdown=code-block-body]")
+    .evaluate((element) => {
+      element.scrollTop = 0;
+      element.dispatchEvent(new Event("scroll"));
+    });
   await page.getByRole("button", { name: "Append lines" }).click();
   await expect
-    .poll(() => page.locator("pre").evaluate((element) => element.scrollTop))
+    .poll(() =>
+      page
+        .locator("[data-streamdown=code-block-body]")
+        .evaluate((element) => element.scrollTop),
+    )
     .toBe(0);
 });

@@ -1,0 +1,26 @@
+---
+title: FAQ
+description: Package identity, framework differences, and verification.
+---
+
+# FAQ
+
+## Is this a published npm upgrade?
+
+No publication is claimed. The fork currently retains the original `1.0.1` package identity. Follow [local integration](/getting-started); pin a reviewed commit for reproducible use.
+
+## Is it a React wrapper?
+
+No. Rendering, overrides and component-valued plugins use native Solid types. Upstream structural providers may declare React peers; prefer native subpaths.
+
+## Does target 2.7.0 mean full parity is proven?
+
+No. It names the exact acceptance baseline. Passing type checks or a small fixture set does not establish all UI, accessibility, security, SSR/hydration or performance behavior. See [verification](/streamdown-parity).
+
+## What differs for Solid consumers?
+
+Components and JSX use native Solid types and owner-based reactivity, not React hooks. `useIsCodeFenceIncomplete` returns an accessor; reactive props must be read within tracked expressions. The functional surface is implemented, but passing mapped fixtures is not an exhaustive parity proof. Any newly discovered feasible gap remains implementation work, not an inherent Solid limitation.
+
+## Where are license notices?
+
+The original Solid code is MIT; adapted Vercel material retains Apache-2.0 notices. See repository `ATTRIBUTION.md`, `LICENSE`, and `LICENSE-STREAMDOWN`.

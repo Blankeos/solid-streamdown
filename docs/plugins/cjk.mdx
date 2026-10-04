@@ -1,0 +1,13 @@
+---
+title: CJK plugin
+description: Improve Markdown emphasis around East Asian text.
+---
+
+# CJK plugin
+
+```tsx
+import { cjk } from "solid-streamdown/cjk";
+<Streamdown plugins={{ cjk }}>{markdown()}</Streamdown>;
+```
+
+`createCjkPlugin()` creates the provider; `cjk` is its preconfigured instance. The structural `CjkPlugin` supplies `remarkPluginsBefore` and `remarkPluginsAfter`, plus the deprecated combined `remarkPlugins` array. The before transform handles emphasis, and the after transforms handle CJK autolink boundaries and strikethrough around GFM. Keep that ordering when composing custom pipelines. CJK parsing is synchronous and does not require a browser. It is a Markdown parsing feature, not a font, locale or text-direction setting.

@@ -1,0 +1,23 @@
+---
+title: Custom renderers
+description: Render fenced languages with Solid components.
+---
+
+# Custom renderers
+
+```tsx
+import type { Component } from "solid-js";
+import type { CustomRendererProps } from "solid-streamdown";
+
+const Widget: Component<CustomRendererProps> = (props) => (
+  <div data-language={props.language}>{props.code}</div>
+);
+
+<Streamdown
+  plugins={{ renderers: [{ language: "widget", component: Widget }] }}
+>
+  {markdown()}
+</Streamdown>;
+```
+
+`CustomRenderer.language` accepts one language or an array. Renderer props include `code`, `language`, the raw fence metastring `meta`, and block-local `isIncomplete`. Keep reads reactive; do not destructure a snapshot and expect updates. Custom renderers are trusted application code. Validate or parse structured content yourself, and handle incomplete input without throwing during streaming.

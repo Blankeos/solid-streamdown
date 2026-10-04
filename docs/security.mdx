@@ -1,0 +1,18 @@
+---
+title: Security
+description: Content trust, sanitation, and extension boundaries.
+---
+
+# Security
+
+Treat AI-generated Markdown as untrusted input. The current default pipeline processes raw HTML through `rehype-raw`, `rehype-sanitize` and `rehype-harden`. This differs from the initial Solid renderer, which disabled raw HTML. Sanitation uses an extended GitHub schema (including code metastrings, `tel` and the internal `streamdown` protocol, with no clobber prefix); hardening defaults allow all image/link prefixes and protocols, plus data images. The sanitation stage and default URL transform still reject executable URL schemes. This is not an origin safelist or a comprehensive security audit.
+
+Explicit `rehypePlugins` replace defaults rather than appending. Explicit `remarkPlugins` also replace their default list. Preserve the appropriate parsing, sanitation, hardening and GFM stages when composing replacements. `allowedTags` extends the default sanitation pipeline; its behavior must not be assumed with a custom plugin list. Attribute names in `allowedTags` use HAST canonical properties, such as `dataId`, not arbitrary DOM spelling. Allowed containers do not exempt nested hostile content from sanitation.
+
+For the target default pipeline, preserve sanitation and hardening when replacing `rehypePlugins`. `allowedTags` extends tag/attribute allowances, not arbitrary script execution. `literalTagContent` controls parsing, not trust. `allowedElements`, `disallowedElements`, `allowElement` and `unwrapDisallowed` are rendering filters, not standalone HTML sanitizers.
+
+`urlTransform` is a trusted escape hatch. The direct API uses `(url, key, node)` with a HAST element; legacy `StreamMarkdown` uses a tag-name third argument. Rejecting unsafe schemes does not prevent tracking images, phishing or navigation to hostile HTTPS sites. Apply application origin/domain policy where required.
+
+Custom unified plugins, component overrides, token attributes/styles, Mermaid config and custom renderers execute as trusted code. Overriding an anchor can bypass built-in navigation handling. Mermaid SVG sanitation is separate from Markdown sanitation; callbacks that mutate sanitized DOM need independent review.
+
+The pipeline is synchronous; async rehype/remark transforms are not automatically supported. Use [the verification checklist](/streamdown-parity) for malformed HTML, event attributes, protocol smuggling, images and plugin replacement tests. No comprehensive security audit is claimed.

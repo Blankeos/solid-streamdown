@@ -36,9 +36,10 @@ describe("Streamdown public interface", () => {
       <Streamdown className="custom">{text()}</Streamdown>
     ));
     try {
-      expect(mounted.container.querySelector("strong")?.textContent).toBe(
-        "bold",
-      );
+      expect(
+        mounted.container.querySelector("span[data-streamdown=strong]")
+          ?.textContent,
+      ).toBe("bold");
       expect(mounted.container.querySelector(".custom")).not.toBeNull();
       expect(
         mounted.container.querySelector(".streamdown-streaming"),
@@ -60,9 +61,10 @@ describe("Streamdown public interface", () => {
       <Streamdown plugins={plugins}>{text()}</Streamdown>
     ));
     try {
-      expect(mounted.container.querySelector("strong")?.textContent).toBe(
-        "中文。",
-      );
+      expect(
+        mounted.container.querySelector("span[data-streamdown=strong]")
+          ?.textContent,
+      ).toBe("中文。");
       expect(mounted.container.querySelector(".katex math")).not.toBeNull();
       await waitFor(
         () =>
@@ -88,7 +90,7 @@ describe("Streamdown public interface", () => {
     }
   });
 
-  it("discards stale diagram completions and sanitizes SVG at the native async seam", async () => {
+  it("discards completions from replaced diagram plugins and sanitizes SVG at the native async seam", async () => {
     const requests: {
       source: string;
       resolve: (result: { svg: string }) => void;
@@ -104,13 +106,23 @@ describe("Streamdown public interface", () => {
       }),
     };
     const [text, setText] = createSignal("```mermaid\nfirst\n```");
+    const [plugin, setPlugin] = createSignal(diagram);
     const mounted = mount(() => (
-      <Streamdown plugins={{ mermaid: diagram }}>{text()}</Streamdown>
+      <Streamdown plugins={{ mermaid: plugin() }}>{text()}</Streamdown>
     ));
     try {
       await flush();
       setText("```mermaid\nsecond\n```");
+      setPlugin({ ...diagram });
       await flush();
+      expect(requests.map((request) => request.source)).toEqual(["first"]);
+      requests[0].resolve({ svg: "<svg><text>first</text></svg>" });
+      await flush();
+      expect(
+        mounted.container.querySelector(
+          "[data-streamdown=mermaid] svg:has(text)",
+        ),
+      ).toBeNull();
       expect(requests.map((request) => request.source)).toEqual([
         "first",
         "second",
@@ -119,11 +131,11 @@ describe("Streamdown public interface", () => {
         svg: '<svg xmlns="http://www.w3.org/2000/svg"><text>second</text><script>alert(1)</script></svg>',
       });
       await flush();
-      requests[0].resolve({ svg: "<svg><text>first</text></svg>" });
-      await flush();
-      expect(mounted.container.querySelector("svg")?.textContent).toBe(
-        "second",
-      );
+      expect(
+        mounted.container.querySelector(
+          "[data-streamdown=mermaid] svg:has(text)",
+        )?.textContent,
+      ).toBe("second");
       expect(mounted.container.querySelector("script")).toBeNull();
       mounted.cleanup();
     } catch (error) {
@@ -159,7 +171,9 @@ it("filters native nodes with parent/index contracts and preserves legacy URL ar
     </>
   ));
   try {
-    expect(mounted.container.querySelector("strong")).toBeNull();
+    expect(
+      mounted.container.querySelector("span[data-streamdown=strong]"),
+    ).toBeNull();
     expect(mounted.container.textContent).not.toContain("hidden");
     expect(seen).toContain("2:element");
     setUnwrap(true);

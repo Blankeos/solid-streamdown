@@ -1,0 +1,25 @@
+---
+title: Legacy compatibility
+description: Preserve StreamMarkdown and createMarkdownStream behavior.
+---
+
+# Legacy compatibility
+
+```tsx
+import { StreamMarkdown, createMarkdownStream } from "solid-streamdown";
+const stream = createMarkdownStream();
+// In your transport: stream.write(chunk); on completion: stream.end();
+<StreamMarkdown stream={stream} animated />;
+```
+
+`stream` takes precedence over `content`. `createMarkdownStream({ initialContent? })` exposes `write`, `end`, `reset`, `content()` and `isStreaming()`. Reset before reusing it for a new response.
+
+| Behavior                    | StreamMarkdown legacy            | Streamdown direct                          |
+| --------------------------- | -------------------------------- | ------------------------------------------ |
+| Text input                  | `content` or `stream`            | String `children`                          |
+| Active flag                 | Follows stream unless overridden | Explicit `isAnimating`, default false      |
+| Caret                       | `showCaret` defaults true        | `caret` absent by default                  |
+| Omitted repair prop         | Repairs while active             | Repairs in streaming mode, including final |
+| URL callback third argument | Tag-name string                  | HAST element                               |
+
+Explicit `parseIncompleteMarkdown={true}` keeps repair enabled after settling in streaming mode. Static mode disables repair, reveal, caret and callbacks in both interfaces. Legacy parser utilities are retained; components use whole-document `remend` rather than treating the legacy line fixer as the rendering engine.

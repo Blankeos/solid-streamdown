@@ -1,3 +1,9 @@
+/*
+ * Copyright Vercel, Inc.
+ * Licensed under the Apache License, Version 2.0 (see LICENSE-STREAMDOWN).
+ * Native pipeline and HAST postprocessing adapted from Streamdown 2.7.0.
+ * JSX conversion and legacy compatibility use Solid's runtime.
+ */
 import type { JSX } from "solid-js";
 import { unified } from "unified";
 import type { PluggableList } from "unified";
@@ -5,18 +11,45 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import type { Options as RemarkRehypeOptions } from "remark-rehype";
-import remend from "remend";
+import { urlAttributes } from "html-url-attributes";
+import rehypeRaw from "rehype-raw";
+import { prepareMarkdown } from "./preprocess";
+import {
+  defaultRemarkPluginsArray,
+  defaultRehypePluginsArray,
+  resolveRehypePlugins,
+} from "./markdown-plugins";
+import { remarkEscapeHtml } from "./remark/escape-html";
+import { remarkDisableAutolinkProtocols } from "./remark/disable-autolink-protocols";
+import { rehypeLiteralTagContent } from "./rehype/literal-tag-content";
+export { defaultRehypePlugins, defaultRemarkPlugins } from "./markdown-plugins";
+export { normalizeHtmlIndentation, prepareMarkdown } from "./preprocess";
+export { defaultUrlTransform } from "./safe-url";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { jsx, jsxs, Fragment } from "solid-js/h/jsx-runtime";
-import type { Element, ElementContent, Root, RootContent } from "hast";
+import type { Element, Root } from "hast";
+import { resolveComponentFallback } from "./component-fallback";
 import type { ComponentOverrides } from "./types";
-import { defaultSafeUrlTransform, sanitizeSrcset } from "./safe-url";
+import {
+  defaultSafeUrlTransform,
+  defaultUrlTransform,
+  sanitizeSrcset,
+} from "./safe-url";
 import type { UrlTransform } from "./safe-url";
 
 export type { UrlTransform } from "./safe-url";
+import type { PreprocessOptions } from "./preprocess";
 
-export interface ParseOptions {
+export interface ParseOptions extends PreprocessOptions {
+  /** Opt into Streamdown 2.7 raw → sanitize → harden defaults. Legacy callers remain raw-disabled. */
+  streamdownDefaults?: boolean;
+  /** Core sets this for blocks after preparing the whole document with prepareMarkdown. */
+  skipPreprocessing?: boolean;
+  skipHtml?: boolean;
+  disableAutolinkProtocols?: string[];
+
   components?: ComponentOverrides;
+  fallbackComponent?: import("./types").StreamdownProps["fallbackComponent"];
   nodeUrlTransform?: import("./types").StreamdownUrlTransform;
   allowedElements?: readonly string[];
   disallowedElements?: readonly string[];
@@ -25,43 +58,108 @@ export interface ParseOptions {
   plugins?: import("./plugin-types").PluginConfig;
   /** Whether content is streaming (repairs incomplete markdown first) */
   isStreaming?: boolean;
-  /** Extra remark plugins, applied after GFM */
+  /** Native mode replaces defaults; legacy mode appends after GFM. */
   remarkPlugins?: PluggableList;
-  /** Extra rehype plugins, applied after the mdast-to-hast step */
+  /** Native mode replaces raw/sanitize/harden defaults; legacy mode appends plugins. */
   rehypePlugins?: PluggableList;
   /** Overrides for the mdast-to-hast conversion */
-  remarkRehypeOptions?: RemarkRehypeOptions;
+  remarkRehypeOptions?: Readonly<RemarkRehypeOptions>;
   /** Custom URL policy; defaults to rejecting unsafe schemes */
   urlTransform?: UrlTransform;
 }
 
-const defaultProcessor = unified()
-  .use(remarkParse)
-  .use(remarkGfm)
-  .use(remarkRehype, { allowDangerousHtml: false });
-
-function createProcessor(options?: ParseOptions) {
-  if (
-    !options?.plugins &&
-    !options?.remarkPlugins?.length &&
-    !options?.rehypePlugins?.length &&
-    !options?.remarkRehypeOptions
-  ) {
-    return defaultProcessor;
-  }
+function createProcessor(options: ParseOptions = {}) {
+  const native = options.streamdownDefaults;
+  const rehypePlugins = native
+    ? resolveRehypePlugins(options.rehypePlugins, options.allowedTags)
+    : (options.rehypePlugins ?? []);
+  const hasRaw = rehypePlugins.some(
+    (plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) === rehypeRaw,
+  );
+  const remarkPlugins = native
+    ? (options.remarkPlugins ?? defaultRemarkPluginsArray)
+    : [remarkGfm, ...(options.remarkPlugins ?? [])];
   return unified()
     .use(remarkParse)
-    .use(options?.plugins?.cjk?.remarkPluginsBefore ?? [])
-    .use(remarkGfm)
-    .use(options?.plugins?.cjk?.remarkPluginsAfter ?? [])
-    .use(options?.plugins?.math ? [options.plugins.math.remarkPlugin] : [])
-    .use(options?.remarkPlugins ?? [])
+    .use(options.plugins?.cjk?.remarkPluginsBefore ?? [])
+    .use(remarkPlugins)
+    .use(
+      options.disableAutolinkProtocols?.length
+        ? [[remarkDisableAutolinkProtocols, options.disableAutolinkProtocols]]
+        : [],
+    )
+    .use(options.plugins?.cjk?.remarkPluginsAfter ?? [])
+    .use(options.plugins?.math ? [options.plugins.math.remarkPlugin] : [])
+    .use(native && !hasRaw ? [remarkEscapeHtml] : [])
     .use(remarkRehype, {
-      allowDangerousHtml: false,
-      ...options?.remarkRehypeOptions,
+      allowDangerousHtml: !!native,
+      ...options.remarkRehypeOptions,
     })
-    .use(options?.plugins?.math ? [options.plugins.math.rehypePlugin] : [])
-    .use(options?.rehypePlugins ?? []);
+    .use(native ? rehypePlugins : [])
+    .use(
+      options.literalTagContent?.length
+        ? [[rehypeLiteralTagContent, options.literalTagContent]]
+        : [],
+    )
+    .use(options.plugins?.math ? [options.plugins.math.rehypePlugin] : [])
+    .use(native ? [] : rehypePlugins);
+}
+
+// Processor configuration is trusted application code. Cache by function/object
+// identity, not plugin names or JSON: same-named closures and nonserializable
+// options must never share a processor. The bounded LRU stores no source trees.
+const processorCache = new Map<string, ReturnType<typeof createProcessor>>();
+const identities = new WeakMap<object, number>();
+let nextIdentity = 0;
+function identity(value: unknown): string {
+  if (
+    (typeof value === "object" && value !== null) ||
+    typeof value === "function"
+  ) {
+    const object = value as object;
+    let id = identities.get(object);
+    if (id === undefined) {
+      id = ++nextIdentity;
+      identities.set(object, id);
+    }
+    return `ref:${id}`;
+  }
+  return `${typeof value}:${String(value)}`;
+}
+function pluginKey(plugins: PluggableList | undefined): unknown[] {
+  return (plugins ?? []).map((plugin) =>
+    Array.isArray(plugin) ? plugin.map(identity) : identity(plugin),
+  );
+}
+function getCachedProcessor(options: ParseOptions = {}) {
+  const key = JSON.stringify([
+    !!options.streamdownDefaults,
+    options.remarkPlugins === undefined,
+    options.rehypePlugins === undefined,
+    options.rehypePlugins === defaultRehypePluginsArray,
+    pluginKey(options.remarkPlugins),
+    pluginKey(options.rehypePlugins),
+    identity(options.remarkRehypeOptions),
+    options.allowedTags,
+    options.literalTagContent,
+    options.disableAutolinkProtocols,
+    pluginKey(options.plugins?.cjk?.remarkPluginsBefore),
+    pluginKey(options.plugins?.cjk?.remarkPluginsAfter),
+    pluginKey(options.plugins?.math ? [options.plugins.math.remarkPlugin] : []),
+    pluginKey(options.plugins?.math ? [options.plugins.math.rehypePlugin] : []),
+  ]);
+  const cached = processorCache.get(key);
+  if (cached) {
+    processorCache.delete(key);
+    processorCache.set(key, cached);
+    return cached;
+  }
+  const processor = createProcessor(options);
+  processorCache.set(key, processor);
+  if (processorCache.size > 100) {
+    processorCache.delete(processorCache.keys().next().value!);
+  }
+  return processor;
 }
 
 function sanitizeElementUrls(
@@ -74,6 +172,19 @@ function sanitizeElementUrls(
   const properties = node.properties;
   if (!properties) {
     return;
+  }
+  for (const key in urlAttributes) {
+    if (!Object.hasOwn(properties, key)) continue;
+    const tags = urlAttributes[key];
+    if (tags !== null && !tags.includes(node.tagName)) continue;
+    if (
+      (node.tagName === "a" && key === "href") ||
+      (node.tagName === "img" && key === "src")
+    )
+      continue;
+    const next = rewrite(String(properties[key] || ""), key, node.tagName);
+    if (next == null) delete properties[key];
+    else properties[key] = next;
   }
   if (node.tagName === "a" && typeof properties.href === "string") {
     const next = rewrite(properties.href, "href", node.tagName);
@@ -115,15 +226,40 @@ function sanitizeElementUrls(
 function postprocessTree(parent: Root | Element, options?: ParseOptions): void {
   for (let index = 0; index < parent.children.length;) {
     const node = parent.children[index];
+    if (node.type === "raw") {
+      if (options?.skipHtml) {
+        parent.children.splice(index, 1);
+        continue;
+      }
+      parent.children[index] = { type: "text", value: node.value };
+      index++;
+      continue;
+    }
     if (node.type !== "element") {
       index++;
       continue;
     }
-    sanitizeElementUrls(
-      node,
-      options?.urlTransform ?? defaultSafeUrlTransform,
-      options?.nodeUrlTransform,
-    );
+    if (options?.streamdownDefaults) {
+      // Match upstream: harden owns policy; custom transforms see every HTML URL attribute.
+      const transform = options.nodeUrlTransform ?? defaultUrlTransform;
+      for (const key in urlAttributes) {
+        const tags = urlAttributes[key];
+        if (
+          Object.hasOwn(node.properties, key) &&
+          (tags === null || tags.includes(node.tagName))
+        ) {
+          node.properties[key] =
+            transform(String(node.properties[key] || ""), key, node) ??
+            undefined;
+        }
+      }
+    } else {
+      sanitizeElementUrls(
+        node,
+        options?.urlTransform ?? defaultSafeUrlTransform,
+        options?.nodeUrlTransform,
+      );
+    }
     const remove = options?.allowedElements
       ? !options.allowedElements.includes(node.tagName)
       : !!options?.disallowedElements?.includes(node.tagName);
@@ -144,24 +280,26 @@ function postprocessTree(parent: Root | Element, options?: ParseOptions): void {
 }
 
 /**
- * Parses markdown into a hast tree with link/image URL policy applied.
- *
- * This is the AST seam for renderers that need stable recursive rendering:
- * the tree is repaired when streaming (via remend) and `href`/`src`/`srcSet`
- * URLs are filtered through the URL policy, so each node can be rendered
- * independently. This is only a link/image URL policy — not a full HTML
- * sanitizer. Pass a custom `urlTransform` to intentionally override the
- * default safe-URL policy (e.g. to proxy, rewrite, or drop URLs).
- * Whole-document streaming repair happens here via remend — callers pass the
- * complete content, not pre-split blocks.
+ * Parse a complete document into HAST. Legacy callers retain raw-disabled
+ * rendering and the safe tag-name URL callback. With streamdownDefaults,
+ * HTML runs through raw → sanitize → harden; custom plugin lists replace the
+ * defaults and are trusted. Native nodeUrlTransform is applied afterwards
+ * to every applicable html-url-attributes property (default: passthrough).
+ * Whole-document repair and custom-tag preparation happen before parsing;
+ * block callers may opt out with skipPreprocessing after prepareMarkdown.
  */
 export function parseMarkdownTree(
   content: string,
   options?: ParseOptions,
 ): Root {
-  const prepared = options?.isStreaming ? remend(content) : content;
-  const processor = createProcessor(options);
-  const tree = processor.runSync(processor.parse(prepared)) as unknown as Root;
+  const prepared = options?.skipPreprocessing
+    ? content
+    : prepareMarkdown(content, options);
+  const processor = getCachedProcessor(options);
+  const tree = processor.runSync(
+    processor.parse(prepared),
+    prepared,
+  ) as unknown as Root;
   postprocessTree(tree, options);
   return tree;
 }
@@ -178,6 +316,13 @@ export function parseMarkdown(
     jsx: jsx as any,
     jsxs: jsxs as any,
     Fragment,
-    components: options?.components as any,
+    components: resolveComponentFallback(
+      options?.components,
+      options?.fallbackComponent,
+      options?.allowedTags,
+    ) as any,
+    passNode: true,
+    passKeys: true,
+    ignoreInvalidStyle: true,
   }) as JSX.Element;
 }

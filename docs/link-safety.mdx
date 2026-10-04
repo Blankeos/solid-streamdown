@@ -1,0 +1,30 @@
+---
+title: Link safety
+description: Default-enabled navigation checks and native Solid confirmation.
+---
+
+# Link safety
+
+`Streamdown` enables link confirmation by default (`linkSafety: { enabled: true }`). The built-in link renders a button that opens a confirmation overlay rather than navigating immediately. Legacy `StreamMarkdown` keeps confirmation disabled by default.
+
+```tsx
+import type { LinkSafetyConfig } from "solid-streamdown";
+
+const linkSafety: LinkSafetyConfig = {
+  enabled: true,
+  onLinkCheck: async (url) => {
+    try {
+      return new URL(url).origin === "https://example.com";
+    } catch {
+      return false;
+    }
+  },
+};
+<Streamdown linkSafety={linkSafety}>{markdown()}</Streamdown>;
+```
+
+`onLinkCheck` accepts synchronous or asynchronous results. `true` allows immediate navigation; `false`, an absent check, or a rejected check opens confirmation. Stale checks are ignored after a URL change or disposal. This is confirmation policy, not a hard denylist: users can still confirm a link that returned `false`. Use a URL policy or custom component for mandatory denial.
+
+`renderModal` receives native Solid `LinkSafetyModalProps`: reactive `isOpen` and `url`, plus `onClose` and `onConfirm`. Custom renderers own modal presentation, keyboard dismissal and focus management; calling `onConfirm` opens the link but does not automatically close a custom modal. Call `onClose` when your UI should close. Built-in overlays support portal targeting, Escape, focus restoration and cleanup.
+
+A confirmation dialog is not a sanitizer or phishing classifier. Parse URLs and compare exact origins/hostnames; string prefix checks may trust lookalike domains. Component overrides can bypass this built-in handling. See [security](/security) and [verification](/streamdown-parity).

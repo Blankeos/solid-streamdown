@@ -1,0 +1,74 @@
+---
+title: Configuration
+description: Core props and the exact upstream target.
+---
+
+# Configuration
+
+The target is React Streamdown **2.7.0**, not an unversioned latest API. Exported declarations in your built checkout are the authority for available props. The functional surface is implemented; [the parity checklist](/streamdown-parity) maps source and fixtures and records final verification separately.
+
+| Prop                      | Streamdown default                      | Purpose                                       |
+| ------------------------- | --------------------------------------- | --------------------------------------------- |
+| `children`                | empty string                            | Reactive Markdown text                        |
+| `mode`                    | `"streaming"`                           | Streaming repair or static rendering          |
+| `parseIncompleteMarkdown` | `true`                                  | Incomplete Markdown repair                    |
+| `isAnimating`             | `false`                                 | Active stream state                           |
+| `animated`                | `false`                                 | Boolean or animation options                  |
+| `caret`                   | absent                                  | `"block"` or `"circle"`                       |
+| `class` / `className`     | absent                                  | Wrapper class; Solid `class` wins             |
+| `plugins`                 | absent                                  | Native feature providers and custom renderers |
+| `components`              | absent                                  | Native Solid element components               |
+| `shikiTheme`              | provider themes, then GitHub light/dark | Light/dark pair                               |
+| `lineNumbers`             | `true`                                  | Highlighted code line numbers                 |
+| `controls`                | enabled                                 | Interactive action configuration              |
+| `codeBlockMaxHeight`      | `400`                                   | Code viewport height                          |
+| `tableMaxHeight`          | `300`                                   | Table viewport height                         |
+| `translations` / `icons`  | built-in defaults                       | Labels and Solid icons                        |
+| `dir`                     | absent                                  | `"ltr"`, `"rtl"`, or `"auto"`                 |
+
+`remarkPlugins`, `rehypePlugins`, `remarkRehypeOptions`, `urlTransform`, and element filtering customize the processing pipeline. Their trust boundary is described in [security](/security). Do not equate element filtering with sanitation.
+
+| Additional prop             | Default             | Purpose                                         |
+| --------------------------- | ------------------- | ----------------------------------------------- |
+| `remend`                    | remend defaults     | Incomplete repair options                       |
+| `normalizeHtmlIndentation`  | `false`             | Normalize indented HTML blocks                  |
+| `allowedTags`               | absent              | Extend default sanitized tags/attributes        |
+| `literalTagContent`         | absent              | Preserve specified tag contents as literal text |
+| `fallbackComponent`         | absent              | Solid fallback for unmapped elements            |
+| `prefix`                    | absent              | Prefix generated utility classes                |
+| `disableAutolinkProtocols`  | absent              | Disable selected automatic protocol links       |
+| `BlockComponent`            | native `Block`      | Streaming block renderer                        |
+| `parseMarkdownIntoBlocksFn` | built-in splitter   | Streaming block segmentation                    |
+| `linkSafety`                | `{ enabled: true }` | Navigation checks and confirmation              |
+| `portal`                    | browser body        | Overlay target element or getter                |
+| `skipHtml`                  | `false`             | Remove raw HTML nodes                           |
+| `mermaid`                   | absent              | Diagram config and Solid error component        |
+
+Use exported types to keep configuration checked:
+
+```tsx
+import type { StreamdownProps, LinkSafetyConfig } from "solid-streamdown";
+
+const linkSafety: LinkSafetyConfig = {
+  enabled: true,
+  onLinkCheck: (url) => {
+    try {
+      return new URL(url).origin === "https://example.com";
+    } catch {
+      return false;
+    }
+  },
+};
+const options = {
+  mode: "streaming",
+  linkSafety,
+  lineNumbers: true,
+  normalizeHtmlIndentation: true,
+} satisfies Omit<StreamdownProps, "children">;
+
+<Streamdown {...options} isAnimating={streaming()}>
+  {markdown()}
+</Streamdown>;
+```
+
+`false` from `onLinkCheck` requests confirmation; it is not a hard navigation denial. See [link safety](/link-safety). Static mode renders a single document and ignores custom block splitting/rendering hooks. `allowedTags` attribute names use canonical HAST property names, for example `dataId`.

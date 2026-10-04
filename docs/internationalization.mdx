@@ -1,0 +1,14 @@
+---
+title: Internationalization
+description: Override control and modal labels with reactive props.
+---
+
+# Internationalization
+
+```tsx
+<Streamdown translations={{ copyCode: "Copy source" }}>{markdown()}</Streamdown>
+```
+
+Use exported `StreamdownTranslations` and `defaultTranslations` for the complete control, export-format, image, zoom and link-modal label dictionary. Overrides stay reactive when the application locale changes. `IconMap` and `defaultIcons` cover copy/check/download, external link, loader, fullscreen, reset, close and zoom icons.
+
+Icons are native Solid components, not React elements. Text direction is independent of labels; test Arabic/Hebrew/Persian, mixed Latin text, tables and code using `dir`. `dir="auto"` resolves direction by semantic block using text direction detection, rather than relying solely on browser first-strong behavior. Explicit `ltr`/`rtl` is also supported; code remains LTR. Labels, CJK parsing and a raw HTML `lang` attribute are separate concerns. Native hosts preserve sanitized `lang` and canonical HTML/data attributes; the wrapper has no dedicated `lang` prop.

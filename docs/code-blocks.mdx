@@ -1,0 +1,19 @@
+---
+title: Code blocks
+description: Highlighting, line numbers, and interactive controls.
+---
+
+# Code blocks
+
+Enable `code` from `solid-streamdown/code` for Shiki highlighting. Fenced code remains usable as plain text without a provider, during async highlighting, and in server output.
+
+```tsx
+import { code } from "solid-streamdown/code";
+<Streamdown plugins={{ code }} lineNumbers codeBlockMaxHeight={400}>
+  {markdown()}
+</Streamdown>;
+```
+
+Use `shikiTheme` for a light/dark theme pair. Controls offer copy and download, with filename stems and copy success/error callbacks. Set `controls={false}` to hide actions. Active streaming disables actions. Heights accept pixels as numbers or CSS strings; zero disables the cap. Scroll following should release when the reader scrolls away.
+
+A `pre` override bypasses the built-in feature renderer. Custom fenced-language renderers must be Solid components. Fence metadata is preserved for custom renderers; `startLine=N` and `noLineNumbers` control built-in line presentation. Native hosts reflect canonical sanitized attributes without leaking HAST metadata. Fullscreen and pan/zoom belong to table/diagram controls, not syntax highlighting. See [verification](/streamdown-parity).

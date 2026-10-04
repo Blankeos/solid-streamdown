@@ -1,100 +1,78 @@
-# Solid Streamdown compatibility
+# React Streamdown 2.7.0 acceptance checklist
 
-Reference: React Streamdown 2.7.0, commit `08da224`. This is a supported core
-interface and feature-plugin subset, not full API/UI/security/performance parity.
+Exact target: `streamdown@2.7.0`, `vercel/streamdown` reference commit `08da224`.
+Goal: 1:1 functional API/behavior compatibility with native Solid component and
+JSX types, reactive props and owner-based lifecycle. The full functional surface
+is implemented. This checklist distinguishes implementation evidence from final
+verification and is not a declaration of exhaustive performance/security parity.
 
-## Implemented
+## Verified checks
 
-- Native `Streamdown` with reactive string `children`, `class` / `className`,
-  streaming/static modes, `isAnimating`, animation callbacks, `animated`,
-  caret `block` / `circle`, remark/rehype plugins, and Solid component overrides.
-- Defaults: streaming mode, incomplete repair on, animating off, animation off,
-  caret absent. Static disables repair, animation, caret, and callbacks.
-- Structural feature plugins: Shiki async dual-theme tokens, KaTeX, CJK
-  before/after-GFM transforms, Mermaid async rendering, custom language renderers.
-  Native exports are `solid-streamdown/{code,math,cjk,mermaid}`, including factory
-  functions. Runtime dependencies include Shiki, KaTeX, Mermaid and CJK transforms;
-  separate entry points do not make those npm dependencies optional.
-- Actual published `@streamdown/code@2.0.0`, math/cjk/mermaid `1.0.3` objects
-  exercised in jsdom and Chromium. These packages declare React peers but their
-  factories do not use React at runtime. Native plugin subpaths avoid that peer.
-- `StreamMarkdown` and `createMarkdownStream` remain supported; the legacy
-  repair-while-active and caret defaults remain unchanged. Both components use
-  one private core; neither mounts or composes the other's DOM.
-- Async code and diagram completions are invalidated on update/unmount.
-  Mermaid is client-only, uses unique per-request render IDs, sanitizes returned
-  SVG with DOMPurify, and displays source while pending/on the server.
-- Consumers import `katex/dist/katex.min.css`; it is not silently injected.
-  The renderer does not call math `getStyles`. CJK uses `remarkPluginsBefore` /
-  `remarkPluginsAfter`, not the deprecated combined `remarkPlugins` array.
-  Custom renderers receive code, language, meta and incomplete state and must be
-  Solid components. A `pre` override bypasses built-in feature rendering.
-- Explicit ltr/rtl use native `dir`; code remains ltr. Native `auto` differs from
-  React's majority-based per-semantic-block direction resolution.
+Verified against the completed full-port checkout:
 
-- Code and table copy/download controls, enabled by default in `Streamdown`,
-  disabled during `isAnimating`. `controls` accepts a boolean or nested code/table
-  configuration; code copy callbacks and download filename stems are supported.
-  Tables export Markdown/CSV/TSV for copy and Markdown/CSV for download, with
-  `csvSeparator`. Accessible native select/buttons replace React dropdowns.
-- Reactive `translations` and native Solid `icons` overrides for the supported
-  controls; exported defaults and types intentionally cover this subset only.
-- `codeBlockMaxHeight` (400) and `tableMaxHeight` (300), numbers in pixels or CSS
-  strings. Zero disables the cap. Streaming scroll follows the bottom until the
-  reader scrolls away; a new streaming session resumes following.
-- Mermaid `errorComponent` receives chart/error/retry and retries safely without
-  bypassing SVG sanitation. `Streamdown.urlTransform` receives the HAST node;
-  legacy `StreamMarkdown` retains its tag-name argument. Native AST filtering via
-  `allowedElements`, `disallowedElements`, `allowElement(node,index,parent)` and
-  `unwrapDisallowed` runs before rendering. An allowlist takes precedence.
+| Verification                                              | Result                                                |
+| --------------------------------------------------------- | ----------------------------------------------------- |
+| `bun run test:run`                                        | 194 tests passed across 16 files                      |
+| `bun run typecheck`, `bun run check:fix`, `bun run build` | Passed                                                |
+| `bun run test:types`                                      | Built-package consumer types passed                   |
+| `bun run test:browser`                                    | 18 Chromium tests passed across 9 files               |
+| `bun run test:hydration`                                  | 1 separate Chromium hydration test passed             |
+| `bun run test:ssr`                                        | Node SSR without browser globals passed               |
+| Gittydocs 0.0.6 build                                     | 30 static routes, 30 Markdown exports and `/llms.txt` |
 
-## Deliberate limitations / not full parity
+An isolated `npm pack` installation also verified the root exports, all four
+plugin subpaths and Node SSR, without relying on this checkout’s node_modules.
 
-- No fullscreen/pan-zoom, Mermaid/image controls, or portal overlays. Controls,
-  translations and icons expose only the implemented code/table subset, not
-  unsupported options. Code extension mapping covers common languages only;
-  unrecognized languages download as `.txt`. Table exports use native AST text,
-  not custom override DOM, and do not reproduce every React Markdown escaping
-  convention. Code/table overrides bypass the corresponding built-in controls.
-- No link safety confirmation modal, raw HTML processing, custom allowed tags,
-  HTML indentation normalization, literal tags, autolink
-  protocol configuration, custom BlockComponent, or configurable block splitting.
-- Raw HTML remains disabled by default. URL filtering is not a full HTML sanitizer;
-  user-supplied rehype plugins/component overrides are trusted extensions.
-  Mermaid SVG sanitation preserves foreignObject labels, removes script/event
-  attributes, and is separate from the Markdown URL policy. Trusted plugin
-  token styles/attributes are passed through. No claim of identical React security.
-  URL policy covers anchors and images only. Custom URL transforms and
-  `remarkRehypeOptions` are trusted escape hatches; unified processing is
-  synchronous (`runSync`), not an async plugin pipeline.
-- Mermaid rendering already begun is not abortable in its upstream interface;
-  stale completions are ignored, but rendering still consumes work. Mermaid
-  bindFunctions are not invoked: arbitrary upstream callbacks can mutate the
-  sanitized DOM, so interaction binding awaits a separate trusted-plugin policy.
-- Animation uses absolute schedules and HAST source-position identities, with a
-  rendered-offset fallback for positionless trees. Tested appends and structural
-  list/table/reference rewrites no longer restart completed reveals on reinsertion.
-  Source identity is best-effort: decoded/transformed text, missing positions, and
-  changes to existing text ancestors can change identity or remount spans. No
-  blanket guarantee of continuity through all Markdown formatting rewrites.
-  The roughly 5.4 KB Chromium guide fixture checks observed characters older than
-  850 ms remain visible while new content genuinely animates.
-- Every update still repairs/parses the whole document. Index-stable slots are not
-  per-block parse memoization or constant-time rendering; reveal history grows
-  with stream content. No comparative performance benchmark is claimed.
-- SSR code starts as plain text (highlighting completes in browser); SSR Mermaid
-  starts as source. Math/CJK parsing is synchronous and server-compatible.
+The browser checks cover long-message structural rewrites, repeated-prefix reveal
+sessions, provider updates, clipboard/export bytes, live fullscreen table state,
+Mermaid deferral/fit/navigation, native SVG and light/dark theme styles. Hydration
+uses built Node and browser entrypoints and checks retained SSR nodes, async
+highlighting and portal disposal without browser errors.
 
-## Validation
+## Implemented source and fixture map
 
-Validated: `bun run test:run` (**135 unit tests, 9 files**), `bun run typecheck`,
-`bun run build`, and `bun run test:browser` (**6 Chromium tests**: native/published
-four-plugin rendering and updates, rapid reveal/backlog cleanup, reduced motion,
-long-guide rewrite visibility, browser copy/download, controls reactivity,
-filtering and pinned scroll). Browser tests live separately from Vitest.
+Checked items are implemented and mapped to passing fixtures. These checks
+verify concrete contracts; they do not establish exhaustive equivalence for every
+possible extension or performance characteristic.
 
-Node SSR smoke validation exercises native four-plugin output, controls and
-filtering without browser globals; it is not a full
-hydration audit. The package root has Solid JSX, browser development/production,
-Node server and declaration exports under `dist/index/`; feature JS/declarations
-are under `dist/{code,math,cjk,mermaid}/`. Styles export separately as `./styles.css`.
+| Implemented surface                                                                               | Source evidence (`src/`)                                                                                                    | Fixture evidence (`test/`)                                                                                                                       |
+| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [x] Core defaults, static/streaming modes, remend, normalization, callbacks and legacy defaults   | `stream-markdown.tsx`, `preprocess.ts`, `types.ts`                                                                          | `streamdown.test.tsx`, `stream-markdown.test.tsx`, `parser-parity.test.ts`, `create-markdown-stream.test.ts`                                     |
+| [x] Raw HTML parsing, sanitation/hardening and plugin replacement                                 | `markdown-plugins.ts`, `parser.ts`                                                                                          | `parser-parity.test.ts`, `parse-markdown-tree.test.ts`                                                                                           |
+| [x] Allowed/literal tags, fallback components, autolink protocols, filters and URL attributes     | `preprocess-custom-tags.ts`, `preprocess-literal-tag-content.ts`, `component-fallback.ts`, `hast-render.tsx`, `safe-url.ts` | `parser-parity.test.ts`, `composition-parity.test.tsx`, `safe-url.test.ts`, `ui-fidelity.test.tsx`                                               |
+| [x] Block renderer, custom splitting, parsing memos and cross-block definitions                   | `block.tsx`, `block-incomplete-context.ts`, `utils/parse-blocks.ts`, `stream-markdown.tsx`                                  | `block-parity.test.tsx`, `parse-blocks.test.ts`, `composition-parity.test.tsx`                                                                   |
+| [x] Explicit/auto semantic direction with LTR code                                                | `block-direction.ts`, `detect-direction.ts`, `code-block.tsx`                                                               | `block-parity.test.tsx`, `streamdown.test.tsx`                                                                                                   |
+| [x] Default-enabled link checks/modal, async cancellation and custom Solid modal                  | `link.tsx`, `types.ts`, `streamdown-context.ts`                                                                             | `ui-parity.test.tsx`, `browser/ui-parity.spec.ts`                                                                                                |
+| [x] Portal target/getter, focus restoration, scroll locking, cleanup and scoped CSS               | `portal.tsx`, `styles.css`, `ui-utils.tsx`                                                                                  | `ui-parity.test.tsx`, `ui-fidelity.test.tsx`, `browser/ui-parity.spec.ts`                                                                        |
+| [x] Code/table/image/Mermaid controls, live fullscreen table, pan/zoom and exports                | `code-block.tsx`, `table.tsx`, `table-utils.ts`, `image.tsx`, `mermaid.tsx`, `feature-block.tsx`                            | `ui-parity.test.tsx`, `scheduling-parity.test.tsx`, `browser/controls.spec.ts`, `browser/ui-parity.spec.ts`, `browser/scheduling-parity.spec.ts` |
+| [x] Public composables, context, icon/translation types and prefix behavior                       | `index.tsx`, `public-components.tsx`, `controls.tsx`, `streamdown-context.ts`, `ui-utils.tsx`                               | `composition-parity.test.tsx`, `ui-fidelity.test.tsx`, `typechecks/`                                                                             |
+| [x] Native provider factories, custom renderer metadata and alternative-provider contracts        | `plugins/`, `plugin-types.ts`, `feature-block.tsx`                                                                          | `contracts-parity.test.tsx`, `composition-parity.test.tsx`, `streamdown.test.tsx`, `browser/plugins.spec.ts`                                     |
+| [x] Reveal continuity, rewrites, reduced motion, append sessions and pinned scrolling             | `animate-plugin.ts`, `hast-render.tsx`, `pinned-scroll.ts`                                                                  | `animate-plugin.test.ts`, `streamdown.test.tsx`, `browser/reveal.spec.ts`, `browser/long-reveal.spec.ts`, `browser/session-reveal.spec.ts`       |
+| [x] Async scheduling, offscreen deferral, serialized/coalesced diagrams, stale results and themes | `feature-block.tsx`, `mermaid.tsx`, `code-block.tsx`                                                                        | `scheduling-parity.test.tsx`, `ui-fidelity.test.tsx`, `browser/scheduling-parity.spec.ts`, `browser/theme-parity.spec.ts`                        |
+| [x] SSR-safe public initialization and hydration fixtures                                         | `index.tsx`, `portal.tsx`, package conditional exports                                                                      | `browser/ssr-smoke.mjs`, `browser/hydration.spec.ts`, `hydration/`                                                                               |
+
+Additional unit files cover the legacy parser, incomplete parser and safe URL
+utilities: `parser.test.ts`, `parse-incomplete-markdown.test.ts`, and the mapped
+files above. The 27 topic MDX pages are original Solid documentation; this
+checklist, PR summary and implementation scope provide maintenance routes.
+
+## Evidence boundaries
+
+No comprehensive security/hydration audit or comparative performance benchmark
+is claimed. Document repair/preparation and segmentation observe accumulated
+input; unchanged blocks have content-keyed parsing memos, while references and
+footnotes can require a document-wide parse. This is not constant-time parsing.
+Source-based reveal identity is best-effort across transformed or positionless
+ASTs. Async providers may finish obsolete work; stale results must not reach DOM.
+
+Custom unified plugins/components/policies are trusted application extensions.
+Replacing default processing can remove safety guarantees. Confirmation is not
+sanitation or mandatory denial. Legacy URL transforms use a tag-name third
+argument; direct transforms use a HAST node. Legacy omitted repair follows active
+state and caret defaults on; direct repair defaults on through settled streaming
+mode and caret is opt-in. Static mode suppresses repair, reveal, caret and
+animation callbacks and ignores custom block splitting/rendering hooks.
+
+See [maintenance](maintaining.mdx) for commands and pinned sources. Newly found
+feasible gaps are implementation work, never deliberate framework limitations
+without concrete evidence.

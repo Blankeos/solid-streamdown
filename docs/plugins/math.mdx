@@ -1,0 +1,17 @@
+---
+title: Math plugin
+description: KaTeX rendering and explicit stylesheet loading.
+---
+
+# Math plugin
+
+```tsx
+import { createMathPlugin } from "solid-streamdown/math";
+import "katex/dist/katex.min.css";
+const math = createMathPlugin({
+  singleDollarTextMath: false,
+  errorColor: "#cc0000",
+});
+```
+
+Use display math or inline math accepted by your configured parser. Single-dollar text math is off by default. KaTeX processing is synchronous and can run on the server. Import its CSS explicitly; the renderer does not silently inject the provider's `getStyles` output. Math configuration is trusted application configuration.

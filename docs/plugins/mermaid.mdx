@@ -1,0 +1,15 @@
+---
+title: Mermaid plugin
+description: Client-side diagrams and safe async completion.
+---
+
+# Mermaid plugin
+
+```tsx
+import { createMermaidPlugin } from "solid-streamdown/mermaid";
+const mermaid = createMermaidPlugin({ config: { theme: "default" } });
+```
+
+Mermaid fences render source on the server. In the browser, offscreen diagrams use a deferred placeholder and active renders show a loading state. Diagram rendering starts in the browser; stale async completions must be ignored after updates or disposal. Already-started upstream rendering work may continue.
+
+Returned SVG is sanitized with DOMPurify. Configuration and custom providers remain trusted extensions; do not turn off security for untrusted diagrams. `mermaid.errorComponent` receives `chart`, `error` and `retry` and must be a Solid component. Trusted provider interaction bindings run only after sanitation, and binding resources are disposed on replacement. Native controls support fullscreen, pan/zoom and SVG/PNG/MMD exports. Rendering serializes layouts, coalesces pending source and can defer offscreen work; failures preserve the last successful diagram. Mapped scheduling and UI fixtures appear in [verification](/streamdown-parity).

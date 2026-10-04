@@ -1,0 +1,44 @@
+---
+title: Maintaining the fork
+description: Pinned sources, validation commands, and content-only docs.
+---
+
+# Maintaining the fork
+
+## Sources and baseline
+
+React baseline: `vercel/streamdown`, package `streamdown@2.7.0`, reference commit `08da224`. Read its `packages/streamdown` source, plugin packages and `apps/website/content/docs` alongside types. Live `streamdown.ai` docs may advance beyond that baseline. Original Solid upstream: `vherbruck/solid-streamdown`; maintained fork: `Blankeos/solid-streamdown`.
+
+Load `.agents/skills/solid-streamdown-maintain/SKILL.md` before maintenance. Keep native Solid component types, legacy defaults and conditional exports intact. Retain MIT and Apache-2.0 notices and update attribution when incorporating upstream code. Write original docs rather than copying upstream prose wholesale.
+
+## Library verification
+
+```bash
+bun install
+bun run check:fix
+bun run typecheck
+bun run test:run
+bun run build
+bun run test:types
+bun run test:ssr
+bun run test:browser
+bun run test:hydration
+bun run docs:build
+```
+
+Browser tests need Playwright Chromium installed (`bunx playwright install chromium`). Use built root exports in a Node SSR smoke test without browser globals; test browser hydration separately. Report exact counts and outcomes from the current run, not historical counts. The formatter touches multiple source files: coordinate ownership before running it on a shared worktree.
+
+## Documentation
+
+These are content-only Gittydocs pages and `gittydocs.jsonc`; no custom application, UI rewrite or domain is configured.
+
+```bash
+bunx gittydocs@0.0.6 dev ./docs
+bunx gittydocs@0.0.6 build ./docs --out /tmp/solidstreamdown-docs-dist
+```
+
+The pinned CLI supports `build [gittydocsSource] --out <path>`. It supplies its own runtime dependencies; `docs:dev` and `docs:build` wrap the pinned CLI. `docs:build` writes the ignored `.docs-dist/` directory, which is excluded from package output. Check generated routes, navigation, Markdown exports and `/llms.txt` before deployment. Maintenance note: migrate install tabs (npm, pnpm, bun) and type tables to Gittydocs elements when Gittydocs ships them. Until then keep plain Markdown tables, code blocks and single Bun install examples; do not implement custom UI or use unsupported components. Building locally is not publishing. Do not invent a documentation hostname or deploy without authorization.
+
+## Evidence policy
+
+Update [the parity checklist](/streamdown-parity) with declarations, fixtures and verification results for each target surface. Separate implemented source/fixture coverage from final command outcomes. Never mark pending browser or hydration runs as passed. Remove stale gap statements when evidence supersedes them; do not relabel unfinished work as deliberate limitations.

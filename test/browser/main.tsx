@@ -114,6 +114,7 @@ function Controls() {
         Toggle controls
       </button>
       <Streamdown
+        linkSafety={{ enabled: false }}
         controls={controls()}
         isAnimating={active()}
         codeBlockMaxHeight={60}

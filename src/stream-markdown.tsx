@@ -1,6 +1,7 @@
 import {
   Show,
-  splitProps,
+  Index,
+  onCleanup,
   mergeProps,
   createEffect,
   createMemo,
@@ -9,6 +10,7 @@ import {
 import type { Root } from "hast";
 import type {
   AnimatedProp,
+  ComponentOverrides,
   StreamMarkdownProps,
   StreamdownProps,
 } from "./types";
@@ -21,6 +23,17 @@ import {
 } from "./animate-plugin";
 import { FeatureContext } from "./feature-block";
 import { HastRoot } from "./hast-render";
+import { Dynamic } from "solid-js/web";
+import { prepareMarkdown } from "./parser";
+import { Block, normalizeHtmlIndentation, type BlockProps } from "./block";
+import { rehypeBlockDirection } from "./block-direction";
+import { detectTextDirection } from "./detect-direction";
+import { hasIncompleteCodeFence, hasTable } from "./incomplete-code-utils";
+import { parseMarkdownIntoBlocks } from "./utils/parse-blocks";
+import type { ParseOptions } from "./parser";
+import { defaultComponents } from "./public-components";
+import { createCn } from "./ui-utils";
+import { defaultStreamdownContext } from "./streamdown-context";
 
 const normalizeAnimatedKey = (animated: AnimatedProp | undefined): string => {
   if (animated === true) {
@@ -242,11 +255,21 @@ const MarkdownCore: Component<CoreProps> = (props) => {
 
   return (
     <FeatureContext.Provider
-      value={mergeProps(props, {
-        get isAnimating() {
-          return effectiveIsAnimating();
+      value={mergeProps(
+        {
+          controls: false,
+          linkSafety: { enabled: false },
+          lineNumbers: false,
+          codeBlockMaxHeight: 0,
+          tableMaxHeight: 0,
         },
-      })}
+        props,
+        {
+          get isAnimating() {
+            return effectiveIsAnimating();
+          },
+        },
+      )}
     >
       <div
         dir={props.dir}
@@ -267,41 +290,265 @@ const MarkdownCore: Component<CoreProps> = (props) => {
   );
 };
 
+// Legacy HTML hosts remain semantic and preserve original HAST attributes.
+// Fenced code and table keep the feature renderers; caller overrides still win.
+const legacyComponents = Object.fromEntries(
+  Object.keys(defaultComponents)
+    .filter((tag) => !["pre", "code", "table"].includes(tag))
+    .map((tag) => [tag, tag]),
+) as ComponentOverrides;
+
 /** Legacy content/stream interface; retains its original defaults. */
 export const StreamMarkdown: Component<StreamMarkdownProps> = (props) => (
-  <MarkdownCore {...props} />
+  <MarkdownCore
+    {...props}
+    components={{ ...legacyComponents, ...props.components }}
+  />
 );
 
-/** Native Solid interface with React Streamdown defaults, sharing the private core. */
-export const Streamdown: Component<StreamdownProps> = (props) => {
-  const [urlProps, rest] = splitProps(props, ["urlTransform"]);
-  const coreProps = mergeProps(
+/** Native interface: stable per-index owners and content-keyed parser memos. */
+export const Streamdown: Component<StreamdownProps> = (input) => {
+  const props = mergeProps(
     {
+      ...defaultStreamdownContext,
+      mode: "streaming" as const,
       parseIncompleteMarkdown: true,
       isAnimating: false,
       lineNumbers: true,
       controls: true,
       codeBlockMaxHeight: 400,
       tableMaxHeight: 300,
+      linkSafety: { enabled: true },
     },
-    rest,
-    {
-      get urlTransform() {
-        return undefined;
-      },
-      get nodeUrlTransform() {
-        return urlProps.urlTransform;
-      },
-      get content() {
-        return props.children ?? "";
-      },
-      get class() {
-        return props.class ?? props.className;
-      },
-      get showCaret() {
-        return props.caret !== undefined;
-      },
-    },
+    input,
   );
-  return <MarkdownCore {...coreProps} />;
+  const source = createMemo(() => props.children ?? "");
+  const active = () => props.mode !== "static" && props.isAnimating;
+  const prepared = createMemo(() =>
+    prepareMarkdown(source(), {
+      isStreaming: props.mode !== "static" && props.parseIncompleteMarkdown,
+      remend: props.remend,
+      allowedTags: props.allowedTags,
+      literalTagContent: props.literalTagContent,
+    }),
+  );
+  // Definitions are document dependencies: a late definition can change earlier
+  // inline nodes. Footnotes similarly require one mdast tree. Do not parse them
+  // as isolated blocks with invented caches or duplicated footnote sections.
+  const documentDependent = createMemo(
+    () =>
+      /^ {0,3}\[[^\]]+\]:/m.test(prepared()) ||
+      /\[\^[\w-]{1,200}\]/.test(prepared()),
+  );
+  const blocks = createMemo(() => {
+    if (props.mode === "static") return [prepared()];
+    if (documentDependent() && !props.parseMarkdownIntoBlocksFn)
+      return [prepared()];
+    return (props.parseMarkdownIntoBlocksFn ?? parseMarkdownIntoBlocks)(
+      prepared(),
+    );
+  });
+  const incompleteBlocks = createMemo(() =>
+    blocks().map(
+      (content, index) =>
+        active() &&
+        index === blocks().length - 1 &&
+        hasIncompleteCodeFence(content),
+    ),
+  );
+  const offsets = createMemo(() => {
+    let offset = 0;
+    return blocks().map((content) => {
+      const found = prepared().indexOf(content, offset);
+      const start = found < 0 ? offset : found;
+      offset = start + content.length;
+      return start;
+    });
+  });
+  const options = createMemo<ParseOptions>(() => ({
+    streamdownDefaults: true,
+    isStreaming: false,
+    skipPreprocessing: true,
+    skipHtml: props.skipHtml,
+    plugins: props.plugins,
+    remarkPlugins: props.remarkPlugins,
+    rehypePlugins: props.rehypePlugins,
+    remarkRehypeOptions: props.remarkRehypeOptions,
+    nodeUrlTransform: props.urlTransform,
+    allowedElements: props.allowedElements,
+    disallowedElements: props.disallowedElements,
+    allowElement: props.allowElement,
+    unwrapDisallowed: props.unwrapDisallowed,
+    allowedTags: props.allowedTags,
+    literalTagContent: props.literalTagContent,
+    disableAutolinkProtocols: props.disableAutolinkProtocols,
+  }));
+  // Builtin, explicit, inlineCode and fallback precedence belongs to HastRoot.
+  // Keep its explicit map unchanged: proxying every absent tag would override
+  // builtin components rather than fill genuinely missing entries.
+  const components = createMemo(() => props.components);
+  const key = createMemo(() => normalizeAnimatedKey(props.animated));
+  let previousKey = "";
+  let timeline: AnimateTimeline | undefined;
+  let animationPlugins: AnimatePlugin[] = [];
+  let previousSource: string | null = null;
+  let wasActive = false;
+  const animation = createMemo(() => {
+    const value = key();
+    const content = source();
+    const enabled = active() && !!value;
+    const isAppend =
+      previousSource !== null && content.startsWith(previousSource);
+    const reset =
+      value !== previousKey || (enabled && (!wasActive || !isAppend));
+    previousSource = content;
+    wasActive = enabled;
+    if (reset) {
+      previousKey = value;
+      animationPlugins = [];
+      timeline = value
+        ? createAnimateTimeline({
+            maxBacklogMs: getMaxBacklogMs(props.animated),
+          })
+        : undefined;
+    }
+    // One shared source-identity history survives splitting/merging boundaries.
+    // Each block schedules against the same committed wall-clock horizon.
+    if (!active() || !value || !timeline) return null;
+    return { timeline, options: getPluginOptions(props.animated) };
+  });
+  const animateFor = () => {
+    const config = animation();
+    if (!config) return null;
+    return (animationPlugins[0] ??= createAnimatePlugin({
+      ...config.options,
+      timeline: config.timeline,
+    }));
+  };
+  const pass = createMemo(() => {
+    blocks();
+    animation()?.timeline.beginPass(animation()!.timeline.now());
+    return blocks();
+  });
+  createEffect(() => {
+    pass();
+    animation()?.timeline.commitPass();
+  });
+  let previous: boolean | null = null;
+  createEffect(() => {
+    if (props.mode === "static") return;
+    const current = props.isAnimating;
+    if (current && previous !== true) props.onAnimationStart?.();
+    else if (!current && previous === true) props.onAnimationEnd?.();
+    previous = current;
+  });
+  const staticTree = createMemo(() => {
+    if (props.mode !== "static") return { type: "root", children: [] } as Root;
+    const parsed = parseMarkdownTree(
+      props.normalizeHtmlIndentation
+        ? normalizeHtmlIndentation(prepared())
+        : prepared(),
+      options(),
+    );
+    if (props.dir === "auto") rehypeBlockDirection()(parsed);
+    return parsed;
+  });
+  let container: HTMLDivElement | undefined;
+  let host: Element | undefined;
+  const caretVisible = () => active() && !!props.caret;
+  createEffect(() => {
+    pass();
+    staticTree();
+    caretVisible();
+    host?.removeAttribute("data-sd-caret");
+    host?.removeAttribute("data-sd-caret-hidden");
+    host = undefined;
+    if (!container || !caretVisible()) return;
+    const last = blocks().at(-1) ?? "";
+    const hidden = hasIncompleteCodeFence(last) || hasTable(last);
+    // display:contents wrappers don't own rendered text. Walk to a real final
+    // text host, excluding fenced code and table control chrome.
+    const candidates = container.querySelectorAll(
+      "p,h1,h2,h3,h4,h5,h6,li,blockquote,pre,table",
+    );
+    host =
+      candidates[candidates.length - 1] ??
+      container.lastElementChild ??
+      undefined;
+    if (host)
+      host.setAttribute(
+        hidden || host.closest("pre,table")
+          ? "data-sd-caret-hidden"
+          : "data-sd-caret",
+        props.caret!,
+      );
+  });
+  onCleanup(() => {
+    host?.removeAttribute("data-sd-caret");
+    host?.removeAttribute("data-sd-caret-hidden");
+  });
+  return (
+    <FeatureContext.Provider
+      value={mergeProps(props, {
+        get shikiTheme() {
+          return (
+            input.shikiTheme ??
+            input.plugins?.code?.getThemes() ??
+            defaultStreamdownContext.shikiTheme
+          );
+        },
+        get isAnimating() {
+          return active();
+        },
+      })}
+    >
+      <div
+        ref={container}
+        dir={props.dir === "auto" ? undefined : props.dir}
+        data-caret={props.caret}
+        class={createCn(props.prefix)(
+          "space-y-4 whitespace-normal [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+          props.class ?? props.className,
+        )}
+        classList={{
+          streamdown: true,
+          "streamdown-streaming": active(),
+          "streamdown-caret": caretVisible(),
+        }}
+      >
+        <Show
+          when={props.mode !== "static"}
+          fallback={<HastRoot tree={staticTree} components={components()} />}
+        >
+          <Index each={pass()}>
+            {(content, index) => (
+              <Dynamic
+                component={props.BlockComponent ?? Block}
+                {...props}
+                components={components()}
+                content={content()}
+                index={index}
+                shouldParseIncompleteMarkdown={props.parseIncompleteMarkdown}
+                shouldNormalizeHtmlIndentation={
+                  props.normalizeHtmlIndentation ?? false
+                }
+                isIncomplete={incompleteBlocks()[index]}
+                dir={
+                  props.dir === "auto"
+                    ? detectTextDirection(content())
+                    : props.dir
+                }
+                parseOptions={options()}
+                sourceOffset={offsets()[index]}
+                animatePlugin={animateFor()}
+              />
+            )}
+          </Index>
+        </Show>
+        <Show when={!source() && caretVisible()}>
+          <span data-sd-caret={props.caret} />
+        </Show>
+      </div>
+    </FeatureContext.Provider>
+  );
 };

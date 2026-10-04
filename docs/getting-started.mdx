@@ -1,0 +1,37 @@
+---
+title: Getting started
+description: Build and link the maintained fork, then render Markdown.
+---
+
+# Getting started
+
+## Use the fork, not an assumed npm release
+
+```bash
+git clone --branch feat/streaming-content-animation https://github.com/Blankeos/solid-streamdown.git
+cd solid-streamdown
+bun install
+bun run build
+bun link
+# In your Solid application's directory:
+bun link solid-streamdown
+```
+
+Install `solid-js` in your application if it is not already present. Linking uses the local built package and is appropriate for development; rebuild the library when source changes. For reproducible integration, pin a reviewed fork commit and distribute its built package through your own package workflow. Do not assume an unpublished fork can be installed from npm, or that a Git URL installation automatically builds `dist`.
+
+## Render a reactive string
+
+```tsx
+import { createSignal } from "solid-js";
+import { Streamdown } from "solid-streamdown";
+import "solid-streamdown/styles.css";
+
+export function MarkdownView() {
+  const [markdown, setMarkdown] = createSignal("# Hello");
+  const [streaming, setStreaming] = createSignal(false);
+  // Your transport updates these signals; the renderer does not fetch tokens.
+  return <Streamdown isAnimating={streaming()}>{markdown()}</Streamdown>;
+}
+```
+
+Keep signal reads inside JSX. `children` is Markdown text, not an arbitrary Solid child tree. Enable optional features through [native plugins](/plugins). Import KaTeX's stylesheet when using math. The package has server and browser exports; use the package root rather than a browser-only deep import.

@@ -1,3 +1,18 @@
+/*
+ * Copyright Vercel, Inc.
+ * Licensed under the Apache License, Version 2.0 (see LICENSE-STREAMDOWN).
+ * Native passthrough URL contract adapted from Streamdown 2.7.0.
+ * Legacy safe-URL helpers below are independently implemented.
+ */
+import type { StreamdownUrlTransform } from "./types";
+
+/**
+ * Native URL policy belongs to sanitization/hardening, not this callback.
+ * Replacing default rehype plugins or supplying a transform is a trust boundary:
+ * application code must enforce its own policy before untrusted HAST renders.
+ */
+export const defaultUrlTransform: StreamdownUrlTransform = (value) => value;
+
 /**
  * Safe URL policy for rendered links and images.
  *

@@ -1,5 +1,6 @@
 import { defineConfig } from "tsup";
 import * as preset from "tsup-preset-solid";
+import { solidPlugin } from "esbuild-plugin-solid";
 
 const presetOptions: preset.PresetOptions = {
   entries: [
@@ -20,12 +21,22 @@ export default defineConfig((config) => {
   const watching = !!config.watch;
   const parsedData = preset.parsePresetOptions(presetOptions, watching);
 
-  if (!dependencies) return preset.generateTsupOptions(parsedData);
-
   return preset.generateTsupOptions(parsedData).map((tsupOptions) => ({
     ...tsupOptions,
-    external: [...(tsupOptions.external || [])],
+    // Compile both package entry conditions with matching hydration markers.
+    esbuildPlugins: tsupOptions.esbuildPlugins?.map((plugin) =>
+      plugin.name === "esbuild:solid"
+        ? solidPlugin({
+            solid: {
+              generate: Object.keys(tsupOptions.entry ?? {}).some(
+                (name) => name === "server" || name.endsWith("/server"),
+              )
+                ? "ssr"
+                : "dom",
+              hydratable: true,
+            },
+          })
+        : plugin,
+    ),
   }));
 });
-
-const dependencies = true;

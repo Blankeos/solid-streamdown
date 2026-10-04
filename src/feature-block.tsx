@@ -1,24 +1,31 @@
 import {
-  Index,
   Show,
+  Suspense,
   createContext,
   createEffect,
   createSignal,
-  createUniqueId,
+  batch,
+  untrack,
   onCleanup,
   useContext,
 } from "solid-js";
 import { Dynamic, isServer } from "solid-js/web";
-import DOMPurify from "dompurify";
 import type { Element } from "hast";
 import type { StreamdownProps } from "./types";
-import type { BundledLanguage } from "shiki";
-import { pinnedScroll } from "./pinned-scroll";
-import { BlockControls, maxHeight } from "./controls";
-import type { HighlightResult } from "./plugin-types";
+import { useIsCodeFenceIncomplete } from "./block-incomplete-context";
+import {
+  CodeBlock,
+  CodeBlockSkeleton,
+  CodeBlockCopyButton,
+  CodeBlockDownloadButton,
+} from "./code-block";
+import { MermaidControls, MermaidDiagram, sanitizeMermaid } from "./mermaid";
+import { control, useCn, type HostProps } from "./ui-utils";
 
-export const FeatureContext =
-  createContext<Omit<StreamdownProps, "urlTransform">>();
+let mermaidRenderId = 0;
+
+import { FeatureContext } from "./streamdown-context";
+export { FeatureContext } from "./streamdown-context";
 
 export function fencedCode(
   element: Element,
@@ -48,8 +55,15 @@ export function fencedCode(
 }
 
 /** Native reactive code/diagram rendering; plugin promises never mutate the DOM. */
-export function FeatureBlock(props: { element: () => Element }) {
+export function FeatureBlock(props: {
+  element: () => Element;
+  hostProps?: HostProps<"div">;
+}) {
   const context = useContext(FeatureContext)!;
+  const cn = useCn();
+  const isIncomplete = useIsCodeFenceIncomplete();
+  const [binding, setBinding] =
+    createSignal<(el: globalThis.Element) => void>();
   const source = () => fencedCode(props.element())!;
   const renderer = () =>
     context.plugins?.renderers?.find((renderer) =>
@@ -61,69 +75,155 @@ export function FeatureBlock(props: { element: () => Element }) {
     const plugin = context.plugins?.mermaid;
     return plugin?.language === source().language ? plugin : undefined;
   };
-  const [highlighted, setHighlighted] = createSignal<HighlightResult>();
   const [svg, setSvg] = createSignal("");
   const [error, setError] = createSignal("");
-  const id = createUniqueId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const [container, setContainer] = createSignal<HTMLDivElement>();
+  const [ready, setReady] = createSignal(
+    !isServer && typeof IntersectionObserver === "undefined",
+  );
   const [retry, setRetry] = createSignal(0);
+  let disposed = false;
+  let inFlight = false;
   let revision = 0;
+  let wake: (() => void) | undefined;
+  type Request = {
+    plugin: NonNullable<ReturnType<typeof diagram>>;
+    config: import("./plugin-types").MermaidConfig | undefined;
+    code: string;
+    revision: number;
+  };
+  let pending: Request | undefined;
+  onCleanup(() => {
+    disposed = true;
+    pending = undefined;
+    ++revision;
+    wake?.();
+  });
   createEffect(() => {
-    retry();
-    const current = ++revision;
-    const block = source();
-    const plugin = context.plugins?.code;
-    const mermaid = diagram();
-    const config = context.mermaid?.config;
-    const themes = context.shikiTheme ?? plugin?.getThemes();
-    const incomplete =
-      context.mode !== "static" && (context.isAnimating ?? false);
-    let cancelled = false;
-    onCleanup(() => {
-      cancelled = true;
-    });
-    setHighlighted(undefined);
-    setSvg("");
-    setError("");
-    if (renderer()) return;
-    if (mermaid) {
-      if (isServer) return;
-      // A new id for each request prevents concurrent Mermaid renders sharing a container.
-      Promise.resolve()
-        .then(() => {
-          if (cancelled) return;
-          return mermaid
-            .getMermaid(config)
-            .render(`sd-${id}-${current}`, block.code);
-        })
-        .then((result) => {
-          if (!cancelled && result)
-            setSvg(
-              DOMPurify.sanitize(result.svg, {
-                USE_PROFILES: { html: true, svg: true, svgFilters: true },
-                ADD_TAGS: ["foreignObject"],
-                HTML_INTEGRATION_POINTS: { foreignobject: true },
-              }),
+    const el = container();
+    if (isServer || !el || ready()) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let idle: number | undefined;
+    let fallback: ReturnType<typeof setTimeout> | undefined;
+    const clear = () => {
+      clearTimeout(timer);
+      clearTimeout(fallback);
+      if (idle !== undefined) window.cancelIdleCallback?.(idle);
+      idle = undefined;
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        clear();
+        if (!entries.at(-1)?.isIntersecting) return;
+        timer = setTimeout(() => {
+          const records = observer.takeRecords();
+          if (records.length && !records.at(-1)?.isIntersecting) return;
+          const finish = () => {
+            if (disposed) return;
+            observer.disconnect();
+            setReady(true);
+          };
+          if (window.requestIdleCallback) {
+            idle = window.requestIdleCallback(
+              (deadline) => {
+                if (deadline.didTimeout || deadline.timeRemaining() > 0)
+                  finish();
+                else
+                  idle = window.requestIdleCallback(finish, { timeout: 250 });
+              },
+              { timeout: 500 },
             );
-        })
-        .catch((cause: unknown) => {
-          if (!cancelled)
+          } else fallback = setTimeout(finish, 1);
+        }, 300);
+      },
+      { rootMargin: "300px", threshold: 0 },
+    );
+    observer.observe(el);
+    onCleanup(() => {
+      clear();
+      observer.disconnect();
+    });
+  });
+  const drain = async () => {
+    if (inFlight || disposed || !untrack(ready)) return;
+    inFlight = true;
+    try {
+      while (pending && !disposed) {
+        const request = pending;
+        pending = undefined;
+        const started = performance.now();
+        let success = false;
+        try {
+          const result = await request.plugin
+            .getMermaid(request.config)
+            .render(`sd-mermaid-${++mermaidRenderId}`, request.code);
+          if (disposed) return;
+          // A successful intermediate layout is useful while the next request runs.
+          // A changed plugin/config must never install old executable bindings.
+          if (
+            request.plugin === untrack(diagram) &&
+            request.config === context.mermaid?.config
+          ) {
+            batch(() => {
+              setSvg(sanitizeMermaid(result.svg));
+              setBinding(
+                () =>
+                  (
+                    result as {
+                      bindFunctions?: (el: globalThis.Element) => void;
+                    }
+                  ).bindFunctions,
+              );
+              setError("");
+            });
+            success = true;
+          }
+        } catch (cause) {
+          if (!disposed && request.revision === revision)
             setError(cause instanceof Error ? cause.message : String(cause));
-        });
-    } else if (plugin && themes) {
-      const accept = (result: HighlightResult) => {
-        if (!cancelled) setHighlighted(result);
-      };
-      const result = plugin.highlight(
-        {
-          code: block.code,
-          language: block.language as BundledLanguage,
-          themes,
-          isIncomplete: incomplete,
-        },
-        accept,
-      );
-      if (result) accept(result);
+        }
+        // Yield the layout's elapsed time while streaming, but final fence closure
+        // and explicit retry wake the loop immediately (even with unchanged code).
+        if (success && untrack(isIncomplete) && !disposed) {
+          await new Promise<void>((resolve) => {
+            const timer = setTimeout(() => {
+              wake = undefined;
+              resolve();
+            }, performance.now() - started);
+            wake = () => {
+              clearTimeout(timer);
+              wake = undefined;
+              resolve();
+            };
+          });
+        }
+      }
+    } finally {
+      inFlight = false;
     }
+  };
+  createEffect(() => {
+    const attempt = retry();
+    if (attempt) wake?.();
+    const block = source();
+    const plugin = diagram();
+    const config = context.mermaid?.config;
+    const incomplete = isIncomplete();
+    const visible = ready();
+    const custom = renderer();
+    ++revision;
+    if (!plugin || custom || isServer) {
+      pending = undefined;
+      wake?.();
+      setSvg("");
+      setBinding(undefined);
+      setError("");
+      return;
+    }
+    pending = { plugin, config, code: block.code, revision };
+    setError("");
+    if (!incomplete) wake?.();
+    if (visible) void drain();
   });
   return (
     <Show
@@ -132,124 +232,170 @@ export function FeatureBlock(props: { element: () => Element }) {
         <Show
           when={diagram()}
           fallback={
-            <div class="sd-block" data-streamdown="code-block-wrapper">
-              <div class="sd-controls">
-                <BlockControls
-                  kind="code"
-                  text={() => source().code}
-                  extension={
-                    (
-                      {
-                        javascript: "js",
-                        typescript: "ts",
-                        python: "py",
-                        rust: "rs",
-                        bash: "sh",
-                        markdown: "md",
-                        js: "js",
-                        ts: "ts",
-                        json: "json",
-                        html: "html",
-                        css: "css",
-                      } as Record<string, string>
-                    )[source().language] ?? "txt"
-                  }
-                />
-              </div>
-              <pre
-                ref={pinnedScroll(
-                  () => context.isAnimating ?? false,
-                  () => !!maxHeight(context.codeBlockMaxHeight),
-                )}
-                dir="ltr"
-                data-streamdown="code-block"
-                class="sd-code"
-                style={`${highlighted()?.rootStyle ?? ""};${maxHeight(context.codeBlockMaxHeight) ? `max-height:${maxHeight(context.codeBlockMaxHeight)};overflow:auto` : ""}`}
-              >
-                <code class={`language-${source().language}`}>
-                  <Show when={highlighted()} fallback={source().code}>
-                    {(result) => (
-                      <Index each={result().tokens}>
-                        {(line, lineIndex) => (
-                          <>
-                            <span
-                              class="sd-code-line"
-                              data-line={
-                                context.lineNumbers === false
-                                  ? undefined
-                                  : lineIndex + 1
-                              }
-                            >
-                              <Index each={line()}>
-                                {(token) => (
-                                  <span
-                                    {...token().htmlAttrs}
-                                    style={{
-                                      color: token().color,
-                                      "background-color": token().bgColor,
-                                      ...token().htmlStyle,
-                                    }}
-                                  >
-                                    {token().content}
-                                  </span>
-                                )}
-                              </Index>
-                            </span>
-                            {lineIndex < result().tokens.length - 1 ? "\n" : ""}
-                          </>
-                        )}
-                      </Index>
-                    )}
-                  </Show>
-                </code>
-              </pre>
-            </div>
-          }
-        >
-          <div
-            data-streamdown="mermaid"
-            dir="ltr"
-            aria-busy={!svg() && !error()}
-          >
-            <Show
-              when={svg()}
-              fallback={
-                <pre>
-                  <code>{source().code}</code>
-                </pre>
+            <CodeBlock
+              {...props.hostProps}
+              code={source().code}
+              language={source().language}
+              isIncomplete={isIncomplete()}
+              startLine={Math.max(
+                1,
+                Number(source().meta?.match(/startLine=(\d+)/)?.[1] ?? 1),
+              )}
+              lineNumbers={
+                /\bnoLineNumbers\b/.test(source().meta ?? "")
+                  ? false
+                  : context.lineNumbers
               }
             >
-              <div innerHTML={svg()} />
-            </Show>
-            <Show when={error() && !context.isAnimating}>
-              <Show
-                when={context.mermaid?.errorComponent}
-                fallback={<p role="alert">{error()}</p>}
-              >
-                {(ErrorComponent) => (
-                  <Dynamic
-                    component={ErrorComponent()}
-                    chart={source().code}
-                    error={error()}
-                    retry={() => setRetry((value) => value + 1)}
-                  />
-                )}
+              <Show when={control("code", "copy")()}>
+                <CodeBlockCopyButton
+                  onCopy={() => {
+                    const config =
+                      typeof context.controls === "object"
+                        ? context.controls.code
+                        : undefined;
+                    if (
+                      typeof config === "object" &&
+                      typeof config.copy === "object"
+                    )
+                      config.copy.onCopy?.();
+                  }}
+                  onError={(error: Error) => {
+                    const config =
+                      typeof context.controls === "object"
+                        ? context.controls.code
+                        : undefined;
+                    if (
+                      typeof config === "object" &&
+                      typeof config.copy === "object"
+                    )
+                      config.copy.onError?.(error);
+                  }}
+                />
               </Show>
-            </Show>
-          </div>
+              <Show when={control("code", "download")()}>
+                <CodeBlockDownloadButton language={source().language} />
+              </Show>
+            </CodeBlock>
+          }
+        >
+          <Suspense fallback={<CodeBlockSkeleton />}>
+            <div
+              ref={setContainer}
+              data-streamdown="mermaid"
+              dir="ltr"
+              aria-busy={!svg() && !error()}
+            >
+              <Show
+                when={svg()}
+                fallback={
+                  <Show when={!error()}>
+                    <Show
+                      when={!isServer}
+                      fallback={
+                        <pre>
+                          <code>{source().code}</code>
+                        </pre>
+                      }
+                    >
+                      <Show
+                        when={ready()}
+                        fallback={
+                          <div
+                            class={cn("my-4 min-h-[200px]")}
+                            style={{ "min-height": "200px" }}
+                          />
+                        }
+                      >
+                        <div
+                          role="status"
+                          class={cn("my-4 flex justify-center p-4")}
+                        >
+                          <div
+                            class={cn(
+                              "flex items-center space-x-2 text-muted-foreground",
+                            )}
+                          >
+                            <div
+                              aria-hidden="true"
+                              class={cn(
+                                "h-4 w-4 animate-spin rounded-full border-current border-b-2",
+                              )}
+                            />
+                            <span class={cn("text-sm")}>
+                              Loading diagram...
+                            </span>
+                          </div>
+                        </div>
+                      </Show>
+                    </Show>
+                  </Show>
+                }
+              >
+                <MermaidDiagram
+                  chart={source().code}
+                  svg={svg()}
+                  bindFunctions={binding()}
+                  showControls={!!control("mermaid", "panZoom")()}
+                />
+              </Show>
+              <Show when={svg()}>
+                <MermaidControls
+                  chart={source().code}
+                  svg={svg()}
+                  bindFunctions={binding()}
+                />
+              </Show>
+              <Show when={error() && !svg()}>
+                <Show
+                  when={context.mermaid?.errorComponent}
+                  fallback={
+                    <div role="alert" class={cn("rounded-md bg-red-50 p-4")}>
+                      <p class={cn("font-mono text-red-700 text-sm")}>
+                        Mermaid Error: {error()}
+                      </p>
+                      <details class={cn("mt-2")}>
+                        <summary
+                          class={cn("cursor-pointer text-red-600 text-xs")}
+                        >
+                          Show Code
+                        </summary>
+                        <pre
+                          class={cn(
+                            "mt-2 overflow-x-auto rounded bg-red-100 p-2 text-red-800 text-xs",
+                          )}
+                        >
+                          {source().code}
+                        </pre>
+                      </details>
+                    </div>
+                  }
+                >
+                  {(ErrorComponent) => (
+                    <Dynamic
+                      component={ErrorComponent()}
+                      chart={source().code}
+                      error={error()}
+                      retry={() => setRetry((value) => value + 1)}
+                    />
+                  )}
+                </Show>
+              </Show>
+            </div>
+          </Suspense>
         </Show>
       }
     >
       {(custom) => (
-        <Dynamic
-          component={custom().component}
-          code={source().code}
-          language={source().language}
-          meta={source().meta}
-          isIncomplete={
-            context.mode !== "static" && (context.isAnimating ?? false)
-          }
-        />
+        <Suspense fallback={<CodeBlockSkeleton />}>
+          <Dynamic
+            component={custom().component}
+            code={source().code}
+            language={source().language}
+            meta={source().meta}
+            isIncomplete={isIncomplete()}
+          />
+        </Suspense>
       )}
     </Show>
   );

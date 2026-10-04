@@ -1,0 +1,20 @@
+---
+title: Animation
+description: Opt-in reveal and stream state callbacks.
+---
+
+# Animation
+
+```tsx
+<Streamdown isAnimating={streaming()} animated>{markdown()}</Streamdown>
+<Streamdown
+  isAnimating={streaming()}
+  animated={{ sep: "char", animation: "fadeIn", duration: 200, stagger: 24 }}
+>{markdown()}</Streamdown>
+```
+
+`animated={true}` uses word splitting, `fadeIn`, 150 ms duration, `ease`, and 40 ms stagger. Built-in styles include `fadeIn`, `blurIn`, and `slideUp`; custom animation names require corresponding `sd-<name>` keyframes in application CSS. Import the package stylesheet. Reduced-motion styles suppress motion.
+
+`onAnimationStart` and `onAnimationEnd` describe active-state transitions, not completion of each CSS animation. Solid callbacks need no React `useCallback`. Static mode suppresses these callbacks.
+
+Reveal continuity depends on stable source identities through AST rewrites. Append-only content can still change lists, tables or reference links earlier in the document. Do not infer universal no-flicker or performance parity from individual passing fixtures.

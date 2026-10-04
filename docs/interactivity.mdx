@@ -1,0 +1,23 @@
+---
+title: Interactivity
+description: Controls, downloads, scrolling, and overlays.
+---
+
+# Interactivity
+
+```tsx
+<Streamdown
+  controls={{
+    code: { copy: true, download: { filename: "source" } },
+    table: { csvSeparator: ";" },
+  }}
+  codeBlockMaxHeight={400}
+  tableMaxHeight="20rem"
+>
+  {markdown()}
+</Streamdown>
+```
+
+Code/table controls default on in the direct API and disable while `isAnimating`. Copy options can provide `onCopy` and `onError`; filenames are stems, with extensions appended. Browser clipboard permissions and download restrictions still apply.
+
+Fullscreen tables, Mermaid fullscreen/pan/zoom and SVG/PNG/MMD downloads, image downloads and portal overlays are implemented. Tables support CSV/Markdown downloads and CSV/Markdown/TSV copy; CSV downloads include an Excel-compatible UTF-8 BOM, unlike clipboard output. Fullscreen tables move the live table so handlers and streaming rows remain connected. See mapped unit and browser fixtures in [verification](/streamdown-parity). `portal` targets an element or getter and should not evaluate browser globals during SSR. Test keyboard handling, cleanup, stacking and scoped CSS, not only screenshots.

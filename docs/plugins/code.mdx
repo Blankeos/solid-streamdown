@@ -1,0 +1,13 @@
+---
+title: Code plugin
+description: Configure native Shiki highlighting.
+---
+
+# Code plugin
+
+```tsx
+import { createCodePlugin } from "solid-streamdown/code";
+const code = createCodePlugin({ themes: ["github-light", "github-dark"] });
+```
+
+The provider supplies asynchronous tokens and dual-theme styles. Highlighting completion must not overwrite newer content or an unmounted block. Unsupported language behavior and custom theme registration should be checked against the provider contract. See [code blocks](/code-blocks) for presentation and controls.

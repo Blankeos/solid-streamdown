@@ -1,0 +1,170 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blankeos/gittydocs/v0.0.6/gittydocs.schema.json",
+  "site": {
+    "name": "Solid Streamdown",
+    "description": "Native SolidJS port targeting React Streamdown 2.7.0.",
+    "repo": {
+      "owner": "Blankeos",
+      "name": "solid-streamdown",
+      "ref": "feat/streaming-content-animation",
+      "docsPath": "docs",
+    },
+  },
+  "nav": [
+    {
+      "label": "Start",
+      "items": [
+        {
+          "label": "Solid Streamdown",
+          "path": "/",
+        },
+        {
+          "label": "Getting started",
+          "path": "/getting-started",
+        },
+        {
+          "label": "Usage",
+          "path": "/usage",
+        },
+        {
+          "label": "Configuration",
+          "path": "/configuration",
+        },
+        {
+          "label": "Migration",
+          "path": "/migrate",
+        },
+        {
+          "label": "Legacy compatibility",
+          "path": "/legacy",
+        },
+      ],
+    },
+    {
+      "label": "Rendering",
+      "items": [
+        {
+          "label": "GitHub Flavored Markdown",
+          "path": "/gfm",
+        },
+        {
+          "label": "Code blocks",
+          "path": "/code-blocks",
+        },
+        {
+          "label": "Components",
+          "path": "/components",
+        },
+        {
+          "label": "Custom renderers",
+          "path": "/custom-renderers",
+        },
+        {
+          "label": "Animation",
+          "path": "/animation",
+        },
+        {
+          "label": "Carets",
+          "path": "/carets",
+        },
+        {
+          "label": "Termination",
+          "path": "/termination",
+        },
+        {
+          "label": "Memoization",
+          "path": "/memoization",
+        },
+        {
+          "label": "Styling",
+          "path": "/styling",
+        },
+        {
+          "label": "Typography",
+          "path": "/typography",
+        },
+      ],
+    },
+    {
+      "label": "Plugins",
+      "items": [
+        {
+          "label": "Plugins",
+          "path": "/plugins",
+        },
+        {
+          "label": "Code plugin",
+          "path": "/plugins/code",
+        },
+        {
+          "label": "Math plugin",
+          "path": "/plugins/math",
+        },
+        {
+          "label": "CJK plugin",
+          "path": "/plugins/cjk",
+        },
+        {
+          "label": "Mermaid plugin",
+          "path": "/plugins/mermaid",
+        },
+      ],
+    },
+    {
+      "label": "Trust and interaction",
+      "items": [
+        {
+          "label": "Security",
+          "path": "/security",
+        },
+        {
+          "label": "Link safety",
+          "path": "/link-safety",
+        },
+        {
+          "label": "Interactivity",
+          "path": "/interactivity",
+        },
+        {
+          "label": "Internationalization",
+          "path": "/internationalization",
+        },
+      ],
+    },
+    {
+      "label": "Maintenance",
+      "items": [
+        {
+          "label": "FAQ",
+          "path": "/faq",
+        },
+        {
+          "label": "Maintaining the fork",
+          "path": "/maintaining",
+        },
+        {
+          "label": "Parity checklist",
+          "path": "/streamdown-parity",
+        },
+      ],
+    },
+  ],
+  "navFooter": [
+    {
+      "label": "GitHub",
+      "path": "https://github.com/Blankeos/solid-streamdown",
+    },
+  ],
+  "ui": {
+    "breadcrumbs": true,
+    "pageNavigation": true,
+  },
+  "links": {
+    "github": "https://github.com/Blankeos/solid-streamdown",
+    "issues": "https://github.com/Blankeos/solid-streamdown/issues",
+  },
+  "llms": {
+    "enabled": true,
+    "path": "llms",
+  },
+}

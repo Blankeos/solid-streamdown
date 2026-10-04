@@ -1,71 +1,9 @@
-# solid-streamdown — Streaming Markdown for SolidJS
+# Native Solid Streamdown implementation scope
 
-> Standalone library project. Separate repo. To be brainstormed and designed in a dedicated session.
+The maintained fork implements the functional surface of React Streamdown **2.7.0** (reference `08da224`) with native Solid components and reactivity. It is not a React wrapper. The package retains upstream Solid version `1.0.1`; no fork npm publication is claimed.
 
-## Concept
+Implemented areas include reactive Markdown children and active-stream state, streaming/static modes, remend repair, block splitting/memoized rendering and direction, default raw HTML sanitation/hardening, custom tags/literal content/fallback components, element and URL policies, default-enabled link confirmation, portal overlays, native providers and custom fenced renderers, code/table/image/Mermaid controls, composable exports, translations/icons and opt-in reveal/carets. Legacy stream APIs retain their separate defaults.
 
-A SolidJS port of Vercel's [Streamdown](https://streamdown.ai/) — a drop-in streaming Markdown renderer purpose-built for AI chat interfaces. Reuses Streamdown's remark/rehype pipeline but targets SolidJS's JSX runtime instead of React.
+See [configuration](configuration.mdx), [components](components.mdx), [security](security.mdx), and [the evidence checklist](streamdown-parity.md). Source and mapped fixtures document implementation; final command results are recorded separately. No exhaustive security audit, universal hydration guarantee, constant-time parsing or comparative performance equivalence is claimed.
 
-## Why a separate project
-
-- Reusable across multiple applications
-- Publishable to npm as `solid-streamdown` or `@vherbruck/solid-streamdown`
-- Clean separation of concerns — consumer apps depend on it, don't own it
-- Potential open-source contribution to the SolidJS ecosystem
-
-## Use cases
-
-1. **AI chat interfaces** — streaming LLM responses with proper Markdown formatting
-2. **Streaming prose** — SSE chunks rendered incrementally
-3. **Static Markdown display** — readonly content viewing
-
-## Reference implementations
-
-- [Streamdown (React)](https://github.com/vercel/streamdown) — the source to port from
-- [svelte-streamdown](https://github.com/beynar/svelte-streamdown) — Svelte port, shows the adaptation pattern
-- [hast-util-to-jsx-runtime](https://github.com/syntax-tree/hast-util-to-jsx-runtime) — already supports custom JSX runtimes including SolidJS
-
-## Core features to port
-
-- GFM tables, task lists, strikethrough, autolinks
-- Streaming-aware parsing (unterminated block handling)
-- Caret/cursor animation during streaming
-- Code block syntax highlighting (Shiki)
-- Responsive tables (horizontal scroll in narrow containers)
-- Custom component overrides (for app-specific rendering)
-- Dark mode / Tailwind typography compatible
-- Zero re-render on chunk append (incremental DOM updates)
-
-## API sketch
-
-```tsx
-import { StreamMarkdown, createMarkdownStream } from "solid-streamdown";
-
-// Static rendering
-<StreamMarkdown content={markdownString} />
-
-// Streaming rendering
-const stream = createMarkdownStream();
-
-// Feed chunks as they arrive from SSE
-onSSEChunk((chunk) => stream.write(chunk));
-onSSEEnd(() => stream.end());
-
-<StreamMarkdown stream={stream} />
-```
-
-## Design questions for brainstorm session
-
-1. Should it use `hast-util-to-jsx-runtime` with SolidJS config, or render to DOM directly?
-2. How to handle SolidJS's fine-grained reactivity with streaming content?
-3. Should it support Milkdown-style editing (read-write) or just rendering (read-only)?
-4. Plugin system for custom renderers (entity auto-linking)?
-5. How to handle the caret animation in SolidJS (CSS vs signal)?
-6. Package structure — monorepo with core + solid adapter, or single package?
-
-## Next steps
-
-- Dedicated brainstorm session for library design
-- Create new repo (github.com/vherbruck/solid-streamdown or similar)
-- Implement core + SolidJS adapter
-- Integrate into consumer applications as a dependency
+Documentation remains content-only Gittydocs 0.0.6. Installation uses a reviewed built checkout rather than assuming the npm registry contains this fork. No custom documentation UI, deployment or publishing is part of this scope.

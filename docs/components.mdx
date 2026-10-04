@@ -1,0 +1,47 @@
+---
+title: Components
+description: Native Solid element overrides and composable APIs.
+---
+
+# Components
+
+```tsx
+<Streamdown
+  components={{
+    a: (props) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+  }}
+>
+  {markdown()}
+</Streamdown>
+```
+
+Overrides are Solid components, not React functions or `ReactNode` factories. Use reactive prop reads and Solid DOM attributes (`class`, Solid event handlers, refs). Overrides may receive an extra HAST `node`; remove metadata before blindly spreading onto native hosts. An override can bypass built-in controls or link handling, so it owns the behavior it replaces.
+
+`fallbackComponent` handles unmapped elements; explicit `components` entries win. `BlockComponent` replaces streaming block rendering and receives content, index, block-local incomplete state and parsing options. Static mode uses the document renderer instead.
+
+## Public root exports
+
+The root exports the following runtime APIs; feature factories live on their native subpaths.
+
+| Group                     | Exports                                                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rendering                 | `Streamdown`, `StreamMarkdown`, `Block`, `defaultComponents`, `StreamdownContext`                                                                       |
+| Block state and direction | `useIsCodeFenceIncomplete`, `detectTextDirection`, `normalizeHtmlIndentation`                                                                           |
+| Parsing and policies      | `defaultUrlTransform`, `defaultRemarkPlugins`, `defaultRehypePlugins`, `parseMarkdownIntoBlocks`, `parseIncompleteMarkdown`, `IncompleteMarkdownParser` |
+| Streaming and reveal      | `createMarkdownStream`, `animate`, `createAnimatePlugin`                                                                                                |
+| Code composition          | `CodeBlock`, `CodeBlockContainer`, `CodeBlockHeader`, `CodeBlockSkeleton`, `CodeBlockCopyButton`, `CodeBlockDownloadButton`                             |
+| Table composition         | `TableCopyDropdown`, `TableDownloadButton`, `TableDownloadDropdown`                                                                                     |
+| Table serialization       | `escapeMarkdownTableCell`, `extractTableDataFromElement`, `tableDataToCSV`, `tableDataToMarkdown`, `tableDataToTSV`                                     |
+| Labels and icons          | `defaultTranslations`, `defaultIcons`                                                                                                                   |
+
+`useIsCodeFenceIncomplete()` returns a Solid `Accessor<boolean>`, not a React-style boolean snapshot. Read it inside reactive expressions:
+
+```tsx
+import { useIsCodeFenceIncomplete } from "solid-streamdown";
+const FenceStatus = () => {
+  const incomplete = useIsCodeFenceIncomplete();
+  return <span>{incomplete() ? "Receiving code" : "Code complete"}</span>;
+};
+```
+
+It describes the containing block, not the whole response. `StreamdownContext` is a native Solid context; use Solid `useContext` to read it within a renderer owner. Public types include `StreamdownProps`, `BlockProps`, `Components`, `ExtraProps`, `DefaultComponents`, `Options`, `AllowedTags`, `AllowElement`, `UrlTransform`, `StreamdownUrlTransform`, `LegacyUrlTransform`, `LinkSafetyConfig`, `LinkSafetyModalProps`, `PortalTarget`, `MermaidOptions`, `MermaidErrorComponentProps`, control/button props, plugin contracts, animation types, `TableData` and stream types. Built declarations contain the complete type export list.

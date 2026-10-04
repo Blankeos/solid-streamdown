@@ -1,0 +1,22 @@
+---
+title: Plugins
+description: Native providers in same-package subpaths.
+---
+
+# Plugins
+
+```tsx
+import { Streamdown } from "solid-streamdown";
+import { code } from "solid-streamdown/code";
+import { math } from "solid-streamdown/math";
+import { cjk } from "solid-streamdown/cjk";
+import { mermaid } from "solid-streamdown/mermaid";
+import "solid-streamdown/styles.css";
+import "katex/dist/katex.min.css";
+
+<Streamdown plugins={{ code, math, cjk, mermaid }}>{markdown()}</Streamdown>;
+```
+
+Feature providers are opt-in. Same-package subpaths avoid the React peers declared by upstream `@streamdown/*` packages. Separate entry points do not make Shiki, KaTeX, Mermaid or CJK transforms optional package dependencies.
+
+Factories are `createCodePlugin`, `createMathPlugin`, `createCjkPlugin`, and `createMermaidPlugin`, exported from their corresponding subpaths. The structural provider contract allows alternative implementations; any component-valued provider must use Solid components.

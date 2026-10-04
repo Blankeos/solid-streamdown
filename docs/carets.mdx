@@ -1,0 +1,14 @@
+---
+title: Carets
+description: Show an opt-in active-stream indicator.
+---
+
+# Carets
+
+```tsx
+<Streamdown caret="block" isAnimating={streaming()}>
+  {markdown()}
+</Streamdown>
+```
+
+Use `"block"` or `"circle"`. The direct `Streamdown` API has no caret by default. An indicator requires active streaming and is suppressed by static mode. The legacy `StreamMarkdown` API instead retains `showCaret={true}` by default; see [legacy compatibility](/legacy).

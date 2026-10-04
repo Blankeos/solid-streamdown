@@ -15,10 +15,9 @@ async function expectReport(page: Page) {
     "$78.90",
     "pending",
   ]);
-  await expect(reveal.locator("strong em code")).toHaveText([
-    "2026-10-04",
-    "USD",
-  ]);
+  await expect(reveal.locator('[data-streamdown="strong"] em code')).toHaveText(
+    ["2026-10-04", "USD"],
+  );
   await expect(reveal.locator("pre code")).toHaveText("2026-10-04 $1,234.56\n");
 }
 
@@ -110,7 +109,7 @@ test("Custom char reveal progresses through rapid appends, drains backlog, and c
   expect(await page.locator(".reveal").textContent()).toBe(drained.text);
 });
 
-test("Custom custom reveal honors reduced motion during streaming", async ({
+test("Custom reveal honors reduced motion during streaming", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });

@@ -6,14 +6,23 @@ export function pinnedScroll(active: () => boolean, enabled: () => boolean) {
   return (element: HTMLElement) => {
     if (isServer) return;
     let pinned = true;
-    let previous = false;
+    let frame: number | undefined;
     const scroll = () => {
       pinned =
         element.scrollHeight - element.scrollTop - element.clientHeight < 8;
     };
     const update = () => {
-      if (active() && enabled() && pinned)
-        element.scrollTop = element.scrollHeight;
+      if (frame !== undefined || !active() || !enabled() || !pinned) return;
+      frame = requestAnimationFrame(() => {
+        frame = undefined;
+        if (active() && enabled() && pinned) {
+          const bottom = Math.max(
+            0,
+            element.scrollHeight - element.clientHeight,
+          );
+          if (element.scrollTop !== bottom) element.scrollTop = bottom;
+        }
+      });
     };
     element.addEventListener("scroll", scroll, { passive: true });
     const mutation = new MutationObserver(update);
@@ -28,13 +37,12 @@ export function pinnedScroll(active: () => boolean, enabled: () => boolean) {
         : new ResizeObserver(update);
     resize?.observe(element);
     createEffect(() => {
-      const current = active();
-      if (current && !previous) pinned = true;
-      previous = current;
+      active();
       enabled();
       update();
     });
     onCleanup(() => {
+      if (frame !== undefined) cancelAnimationFrame(frame);
       mutation.disconnect();
       resize?.disconnect();
       element.removeEventListener("scroll", scroll);

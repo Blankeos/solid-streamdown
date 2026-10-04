@@ -1,0 +1,12 @@
+---
+title: Migration
+description: Translate React usage and retain legacy Solid defaults.
+---
+
+# Migration
+
+Replace `streamdown` with the built fork's `solid-streamdown` root import. Replace `@streamdown/*` providers with same-package native subpaths. Keep Markdown and stream flags reactive using Solid signals.
+
+React element/component types become Solid `JSX`/`Component` types. React hooks, refs and portals require native Solid equivalents; callback-valued props must remain reactive where their identity can change. Component overrides and custom renderers cannot be copied as React runtime objects.
+
+The intended API is 1:1 with React 2.7.0 where framework types allow it. Track incomplete features as work, not inherent restrictions of Solid. Consult [legacy compatibility](/legacy) when migrating an existing Solid `StreamMarkdown` consumer.

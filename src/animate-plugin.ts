@@ -156,7 +156,10 @@ export function createAnimateTimeline(
   };
 }
 
+let nextAnimationSession = 0;
+
 interface ResolvedAnimateConfig {
+  session: number;
   animation: string;
   duration: number;
   easing: string;
@@ -245,6 +248,7 @@ const stampAnimation = (
 ): void => {
   element.properties ??= {};
   element.properties["data-sd-animate"] = true;
+  element.properties["data-sd-animation-session"] = config.session;
   if (offset !== undefined) {
     element.properties["data-sd-offset"] = offset;
   }
@@ -431,6 +435,7 @@ export function createAnimatePlugin(
   options?: AnimateOptions & { timeline?: AnimateTimeline },
 ): AnimatePlugin {
   const config: ResolvedAnimateConfig = {
+    session: ++nextAnimationSession,
     animation: options?.animation ?? "fadeIn",
     duration: options?.duration ?? 150,
     easing: options?.easing ?? "ease",
@@ -447,7 +452,10 @@ export function createAnimatePlugin(
   const rehypePlugin = () => (tree: Root) => {
     const now = timeline?.now() ?? defaultNow();
     const entries = collectTextAndVoid(tree);
-    // Source positions survive loose-list, table, and reference rewrites.
+    // A text node may split or merge when reference links resolve or blocks
+    // collapse into a document. Its start and local index are not independent
+    // identity coordinates: use their sum so an unchanged source character
+    // keeps its absolute birth/start/end schedule across those rewrites.
     // Positionless custom HAST uses rendered offsets as a fallback.
     const identityFor = (
       node: Text | Element,
@@ -455,7 +463,7 @@ export function createAnimatePlugin(
       offset: number,
     ) =>
       node.position
-        ? `source:${node.position.start.offset ?? 0}:${local}`
+        ? `source:${(node.position.start.offset ?? 0) + local}`
         : `rendered:${offset}`;
     let renderedOffset = 0;
     let newCount = 0;

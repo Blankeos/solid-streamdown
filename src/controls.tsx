@@ -27,38 +27,98 @@ export type ControlsConfig =
             copy?: boolean;
             download?: DownloadControlConfig;
             csvSeparator?: CSVSeparator;
+            fullscreen?: boolean;
           };
+      mermaid?:
+        | boolean
+        | {
+            copy?: CopyControlConfig;
+            download?: DownloadControlConfig;
+            fullscreen?: boolean;
+            panZoom?: boolean;
+          };
+      image?: boolean | { download?: boolean };
     };
 export interface StreamdownTranslations {
-  copyCode: string;
-  downloadFile: string;
+  // Link modal
+  close: string;
   copied: string;
+  // Code block
+  copyCode: string;
+  copyLink: string;
+  // Table
   copyTable: string;
   copyTableAsCsv: string;
   copyTableAsMarkdown: string;
   copyTableAsTsv: string;
+  // Mermaid
+  downloadDiagram: string;
+  downloadDiagramAsMmd: string;
+  downloadDiagramAsPng: string;
+  downloadDiagramAsSvg: string;
+  downloadFile: string;
+  // Image
+  downloadImage: string;
   downloadTable: string;
   downloadTableAsCsv: string;
   downloadTableAsMarkdown: string;
+  exitFullscreen: string;
+  externalLinkWarning: string;
+  imageNotAvailable: string;
+  mermaidFormatMmd: string;
+  mermaidFormatPng: string;
+  mermaidFormatSvg: string;
+  openExternalLink: string;
+  openLink: string;
+  resetView: string;
   tableFormatCsv: string;
   tableFormatMarkdown: string;
   tableFormatTsv: string;
+  viewFullscreen: string;
+  zoomIn: string;
+  zoomOut: string;
 }
+
 export const defaultTranslations: StreamdownTranslations = {
+  // Code block
   copyCode: "Copy Code",
   downloadFile: "Download file",
-  copied: "Copied",
+  // Mermaid
+  downloadDiagram: "Download diagram",
+  downloadDiagramAsSvg: "Download diagram as SVG",
+  downloadDiagramAsPng: "Download diagram as PNG",
+  downloadDiagramAsMmd: "Download diagram as MMD",
+  viewFullscreen: "View fullscreen",
+  exitFullscreen: "Exit fullscreen",
+  mermaidFormatSvg: "SVG",
+  mermaidFormatPng: "PNG",
+  mermaidFormatMmd: "MMD",
+  zoomIn: "Zoom in",
+  zoomOut: "Zoom out",
+  resetView: "Reset zoom and pan",
+  // Table
   copyTable: "Copy table",
-  copyTableAsCsv: "Copy table as CSV",
   copyTableAsMarkdown: "Copy table as Markdown",
+  copyTableAsCsv: "Copy table as CSV",
   copyTableAsTsv: "Copy table as TSV",
   downloadTable: "Download table",
   downloadTableAsCsv: "Download table as CSV",
   downloadTableAsMarkdown: "Download table as Markdown",
-  tableFormatCsv: "CSV",
   tableFormatMarkdown: "Markdown",
+  tableFormatCsv: "CSV",
   tableFormatTsv: "TSV",
+  // Image
+  imageNotAvailable: "Image not available",
+  downloadImage: "Download image",
+  // Link modal
+  openExternalLink: "Open external link?",
+  externalLinkWarning: "You're about to visit an external website.",
+  close: "Close",
+  copyLink: "Copy link",
+  copied: "Copied",
+  openLink: "Open link",
 };
+
 export type IconComponent = Component<
   JSX.SvgSVGAttributes<SVGSVGElement> & { size?: number }
 >;
@@ -66,12 +126,20 @@ export interface IconMap {
   CopyIcon: IconComponent;
   CheckIcon: IconComponent;
   DownloadIcon: IconComponent;
+  ExternalLinkIcon: IconComponent;
+  Loader2Icon: IconComponent;
+  Maximize2Icon: IconComponent;
+  RotateCcwIcon: IconComponent;
+  XIcon: IconComponent;
+  ZoomInIcon: IconComponent;
+  ZoomOutIcon: IconComponent;
 }
 const icon =
   (path: string): IconComponent =>
   (props) => (
     <svg
       aria-hidden="true"
+      data-streamdown-icon="true"
       width={props.size ?? 16}
       height={props.size ?? 16}
       viewBox="0 0 24 24"
@@ -84,6 +152,15 @@ const icon =
     </svg>
   );
 export const defaultIcons: IconMap = {
+  ExternalLinkIcon: icon("M15 3h6v6m0-6L10 14M12 3H3v18h18v-9"),
+  Loader2Icon: icon("M12 3a9 9 0 1 1-9 9"),
+  Maximize2Icon: icon("M3 9V3h6m6 0h6v6M3 15v6h6m6 0h6v-6"),
+  RotateCcwIcon: icon("M3 10a9 9 0 1 1 2 9M3 3v7h7"),
+  XIcon: icon("m6 6 12 12M6 18 18 6"),
+  ZoomInIcon: icon(
+    "M11 7v8m-4-4h8m1 5 5 5M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
+  ),
+  ZoomOutIcon: icon("M7 11h8m1 5 5 5M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0"),
   CopyIcon: icon("M9 9h12v12H9z M15 5V3H3v12h2"),
   CheckIcon: icon("m5 12 4 4 10-10"),
   DownloadIcon: icon("M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"),

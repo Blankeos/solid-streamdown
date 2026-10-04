@@ -10,8 +10,8 @@ describe("parseMarkdownIntoBlocks", () => {
     const input = "First paragraph\n\nSecond paragraph\n\nThird paragraph";
     const blocks = parseMarkdownIntoBlocks(input);
     expect(blocks).toEqual([
-      "First paragraph",
-      "Second paragraph",
+      "First paragraph\n\n",
+      "Second paragraph\n\n",
       "Third paragraph",
     ]);
   });
@@ -19,7 +19,7 @@ describe("parseMarkdownIntoBlocks", () => {
   it("keeps heading and following paragraph as separate blocks", () => {
     const input = "# Title\n\nSome text below.";
     const blocks = parseMarkdownIntoBlocks(input);
-    expect(blocks).toEqual(["# Title", "Some text below."]);
+    expect(blocks).toEqual(["# Title\n\n", "Some text below."]);
   });
 
   it("keeps code fences as a single block", () => {
@@ -27,7 +27,7 @@ describe("parseMarkdownIntoBlocks", () => {
       "Before\n\n```javascript\nconst x = 1;\n\nconst y = 2;\n```\n\nAfter";
     const blocks = parseMarkdownIntoBlocks(input);
     expect(blocks).toHaveLength(3);
-    expect(blocks[0]).toBe("Before");
+    expect(blocks[0]).toBe("Before\n\n");
     expect(blocks[1]).toContain("```javascript");
     expect(blocks[1]).toContain("const y = 2;");
     expect(blocks[1]).toContain("```");
@@ -58,6 +58,6 @@ describe("parseMarkdownIntoBlocks", () => {
   it("handles multiple blank lines", () => {
     const input = "First\n\n\n\nSecond";
     const blocks = parseMarkdownIntoBlocks(input);
-    expect(blocks).toEqual(["First", "Second"]);
+    expect(blocks).toEqual(["First\n\n\n\n", "Second"]);
   });
 });

@@ -124,13 +124,33 @@
   opacity: 0.45;
   user-select: none;
 }
-.dark .sd-code,
-.dark .sd-code span {
-  color: var(--shiki-dark) !important;
-  background-color: var(--shiki-dark-bg) !important;
-  font-style: var(--shiki-dark-font-style) !important;
-  font-weight: var(--shiki-dark-font-weight) !important;
-  text-decoration: var(--shiki-dark-text-decoration) !important;
+/* Provider colors are variables, not inline properties: dark mode falls back
+ * to the ordinary provider theme when it has no dark-specific declarations. */
+.sd-code pre {
+  background-color: var(--sdm-bg, inherit);
+  color: var(--sdm-fg, inherit);
+  margin: 0;
+}
+.sd-code-token {
+  color: var(--sdm-c, inherit);
+  background-color: var(--sdm-tbg, transparent);
+  font-style: var(--sdm-font-style, normal);
+  font-weight: var(--sdm-font-weight, inherit);
+  text-decoration: var(--sdm-text-decoration, none);
+}
+.dark .sd-code pre {
+  background-color: var(--shiki-dark-bg, var(--sdm-bg, inherit));
+  color: var(--shiki-dark, var(--sdm-fg, inherit));
+}
+.dark .sd-code-token {
+  color: var(--shiki-dark, var(--sdm-c, inherit));
+  background-color: var(--shiki-dark-bg, var(--sdm-tbg, transparent));
+  font-style: var(--shiki-dark-font-style, var(--sdm-font-style, normal));
+  font-weight: var(--shiki-dark-font-weight, var(--sdm-font-weight, inherit));
+  text-decoration: var(
+    --shiki-dark-text-decoration,
+    var(--sdm-text-decoration, none)
+  );
 }
 .streamdown-caret[data-caret="circle"] > :last-child::after {
   content: " ●";
@@ -176,4 +196,349 @@
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+}
+
+/* Native controls retain sd-* styling independently of Tailwind prefixes. */
+.sd-code-header {
+  font:
+    0.75rem ui-monospace,
+    monospace;
+  color: var(--sd-muted, #888);
+  text-transform: lowercase;
+  min-height: 2rem;
+  display: flex;
+  align-items: center;
+}
+.sd-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+.sd-menu {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 100%;
+  z-index: 20;
+  min-width: 120px;
+  border: 1px solid var(--sd-border, #8885);
+  border-radius: 6px;
+  padding: 2px;
+  background: var(--sd-background, Canvas);
+  color: var(--sd-foreground, CanvasText);
+  box-shadow: 0 4px 12px #0002;
+}
+.sd-menu button {
+  display: block;
+  width: 100%;
+  text-align: start;
+  padding: 8px 12px;
+}
+.sd-menu button:hover,
+.sd-menu button:focus-visible {
+  background: var(--sd-hover, #8882);
+}
+.sd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 16px 16px;
+  background: var(--sd-background, Canvas);
+  color: var(--sd-foreground, CanvasText);
+  overflow: auto;
+}
+.sd-overlay-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+}
+.sd-fullscreen-content {
+  width: 100%;
+  flex: 1;
+  overflow: auto;
+}
+.sd-fullscreen-content table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.sd-link-modal {
+  max-width: 540px;
+  margin: auto;
+  border: 1px solid var(--sd-border, #8885);
+  padding: 24px;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.sd-link-modal button {
+  margin-inline-end: 12px;
+}
+.sd-image {
+  position: relative;
+  display: inline-block;
+  margin-block: 1rem;
+  max-width: 100%;
+}
+.sd-image img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+.sd-image-overlay {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: #0001;
+  opacity: 0;
+}
+.sd-image:hover .sd-image-overlay,
+.sd-image:focus-within .sd-image-overlay {
+  opacity: 1;
+}
+.sd-image > button {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  border-radius: 6px;
+  background: Canvas;
+  padding: 8px;
+  opacity: 0;
+}
+.sd-image:hover > button,
+.sd-image:focus-within > button {
+  opacity: 1;
+}
+.sd-image-placeholder {
+  width: 192px;
+  height: 96px;
+  background: #8883;
+  border-radius: 8px;
+}
+.sd-panzoom {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+}
+.sd-panzoom-viewport {
+  width: 100%;
+  overflow: hidden;
+  max-height: min(70vh, 40rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  flex: 1;
+}
+.sd-panzoom-content {
+  flex-shrink: 0;
+}
+.sd-panzoom-content svg {
+  max-width: none;
+}
+.sd-overlay .sd-panzoom-viewport {
+  max-height: none;
+  min-height: 200px;
+}
+.sd-controls button,
+.sd-dropdown > button,
+.sd-overlay-close {
+  cursor: pointer;
+  padding: 4px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+}
+.sd-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Ported Streamdown 2.7.0 visual contracts (Apache-2.0; LICENSE-STREAMDOWN).
+ * sd-* selectors make the defaults usable without a Tailwind build. */
+.streamdown {
+  white-space: normal;
+}
+.streamdown > :first-child {
+  margin-top: 0;
+}
+.streamdown > :last-child {
+  margin-bottom: 0;
+}
+[data-streamdown="code-block"] {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 0.5rem;
+  border: 1px solid var(--sd-border, #8885);
+  border-radius: 0.75rem;
+  background: var(--sd-sidebar, var(--sidebar, #8881));
+  padding: 0.5rem;
+}
+.sd-code {
+  border: 1px solid var(--sd-border, #8885);
+  border-radius: 0.375rem;
+  background: var(--sd-background, var(--background, Canvas));
+  padding: 1rem;
+  font-size: 0.875rem;
+}
+.sd-code pre,
+.sd-code code {
+  font-family: ui-monospace, monospace;
+  font-size: inherit;
+  white-space: pre;
+}
+.sd-code-header {
+  height: 2rem;
+}
+.sd-code-header > span {
+  margin-left: 0.25rem;
+}
+.sd-code-actions {
+  pointer-events: none;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+}
+.sd-code-action-panel {
+  pointer-events: auto;
+  padding: 0.25rem 0.375rem;
+  border: 1px solid var(--sd-sidebar, #8882);
+  border-radius: 0.375rem;
+  background: var(--sd-sidebar, #8882);
+  backdrop-filter: blur(8px);
+}
+.sd-code-skeleton {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--sd-border, #8885);
+  border-radius: 0.75rem;
+}
+.sd-code-skeleton-header {
+  height: 46px;
+  background: var(--sd-muted-background, #8882);
+}
+.sd-code-skeleton-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+.sd-code-skeleton-body svg {
+  width: 1rem;
+  height: 1rem;
+  animation: sd-spin 1s linear infinite;
+}
+@keyframes sd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sd-control {
+  cursor: pointer;
+  padding: 0.25rem;
+  color: var(--sd-muted, #888);
+  border: 0;
+  background: transparent;
+}
+.sd-control:hover {
+  color: var(--sd-foreground, CanvasText);
+}
+.sd-link {
+  overflow-wrap: anywhere;
+  font-weight: 500;
+  color: var(--sd-primary, var(--primary, LinkText));
+  text-decoration: underline;
+}
+.sd-link-backdrop {
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: color-mix(in srgb, var(--sd-background, Canvas) 50%, transparent);
+  backdrop-filter: blur(4px);
+}
+.sd-link-backdrop > .sd-overlay-close {
+  display: none;
+}
+.sd-link-modal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-sizing: border-box;
+  width: calc(100% - 2rem);
+  max-width: 28rem;
+  margin: 1rem;
+  background: var(--sd-background, Canvas);
+  box-shadow: 0 10px 15px #0002;
+}
+.sd-link-modal h2,
+.sd-link-modal p {
+  margin: 0;
+}
+.sd-link-modal h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+.sd-link-modal p {
+  font-size: 0.875rem;
+  color: var(--sd-muted, #888);
+}
+.sd-link-url {
+  word-break: break-all;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  font:
+    0.875rem ui-monospace,
+    monospace;
+  background: var(--sd-muted-background, #8882);
+}
+.sd-link-url {
+  max-height: 8rem;
+  overflow-y: auto;
+}
+.sd-link-modal button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--sd-border, #8885);
+  background: var(--sd-background, Canvas);
+  color: inherit;
+  cursor: pointer;
+}
+.sd-link-modal .sd-link-confirm {
+  background: var(--sd-primary, #171717);
+  color: var(--sd-primary-foreground, #fff);
+}
+
+.sd-link-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+.sd-link-buttons button {
+  flex: 1;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.sd-link-modal .sd-link-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.25rem;
+  border: 0;
+  margin: 0;
+}
+
+.sd-link-modal h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }

@@ -24,7 +24,14 @@ test("long guide keeps aged characters visible during structural Markdown rewrit
         const text = node.textContent!.trim();
         const count = counts.get(text) ?? 0;
         counts.set(text, count + 1);
-        const key = `${node.getAttribute("data-sd-key") ?? `${text}:${count}`}:${text}`;
+        const identity = node.getAttribute("data-sd-key");
+        const source = identity?.match(/^source:(\d+)(?::(\d+))?$/);
+        // Observe the absolute source character, independently of how the
+        // current parser partitions it into text nodes after a rewrite.
+        const origin = source
+          ? `source:${Number(source[1]) + Number(source[2] ?? 0)}`
+          : (identity ?? `${text}:${count}`);
+        const key = `${origin}:${text}`;
         if (!births.has(key)) births.set(key, now);
         const age = now - births.get(key)!;
         const opacity = Number(getComputedStyle(node).opacity);
