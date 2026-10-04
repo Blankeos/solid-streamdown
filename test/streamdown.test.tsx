@@ -132,3 +132,137 @@ describe("Streamdown public interface", () => {
     }
   });
 });
+
+it("filters native nodes with parent/index contracts and preserves legacy URL arguments", async () => {
+  const { StreamMarkdown } = await import("../src/index");
+  const [unwrap, setUnwrap] = createSignal(false);
+  const seen: string[] = [];
+  const mounted = mount(() => (
+    <>
+      <Streamdown
+        unwrapDisallowed={unwrap()}
+        disallowedElements={["strong"]}
+        allowElement={(node, index, parent) => {
+          if (node.tagName === "em") {
+            seen.push(`${index}:${parent?.type}`);
+            return false;
+          }
+          return true;
+        }}
+      >
+        {"Before **hidden** *emphasis* after"}
+      </Streamdown>
+      <StreamMarkdown
+        content="[legacy](https://example.org)"
+        urlTransform={(url, key, tag) => `${url}/${tag}/${key}`}
+      />
+    </>
+  ));
+  try {
+    expect(mounted.container.querySelector("strong")).toBeNull();
+    expect(mounted.container.textContent).not.toContain("hidden");
+    expect(seen).toContain("2:element");
+    setUnwrap(true);
+    await flush();
+    expect(mounted.container.textContent).toContain("hidden");
+    expect(mounted.container.querySelector("em")).toBeNull();
+    expect(mounted.container.querySelector("a")?.getAttribute("href")).toBe(
+      "https://example.org/a/href",
+    );
+  } finally {
+    mounted.cleanup();
+  }
+});
+
+it("supports nested controls and reports clipboard failures through callbacks", async () => {
+  const [enabled, setEnabled] = createSignal(false);
+  const errors: string[] = [];
+  const mounted = mount(() => (
+    <Streamdown
+      controls={{
+        code: {
+          download: enabled(),
+          copy: { onError: (error) => errors.push(error.message) },
+        },
+        table: false,
+      }}
+    >
+      {"```text\nsource\n```\n\n| a |\n| --- |\n| b |"}
+    </Streamdown>
+  ));
+  try {
+    expect(
+      mounted.container.querySelector(
+        "[data-streamdown=code-block-download-button]",
+      ),
+    ).toBeNull();
+    expect(mounted.container.querySelector("select")).toBeNull();
+    (
+      mounted.container.querySelector(
+        "[data-streamdown=code-block-copy-button]",
+      ) as HTMLButtonElement
+    ).click();
+    await flush();
+    expect(errors).toEqual(["Clipboard API not available"]);
+    expect(mounted.container.querySelector("[role=alert]")?.textContent).toBe(
+      "Clipboard API not available",
+    );
+    setEnabled(true);
+    await flush();
+    expect(
+      mounted.container.querySelector(
+        "[data-streamdown=code-block-download-button]",
+      ),
+    ).not.toBeNull();
+  } finally {
+    mounted.cleanup();
+  }
+});
+
+it("renders a native Mermaid error override and retries through its public callback", async () => {
+  let attempts = 0;
+  const plugin: DiagramPlugin = {
+    name: "mermaid",
+    type: "mermaid",
+    language: "mermaid",
+    getMermaid: () => ({
+      initialize() {},
+      render: async () => {
+        attempts++;
+        if (attempts === 1) throw new Error("Invalid chart");
+        return {
+          svg: "<svg><text>Recovered</text><script>unsafe()</script></svg>",
+        };
+      },
+    }),
+  };
+  const mounted = mount(() => (
+    <Streamdown
+      plugins={{ mermaid: plugin }}
+      mermaid={{
+        errorComponent: (props) => (
+          <button onClick={props.retry}>
+            {props.error}: {props.chart}
+          </button>
+        ),
+      }}
+    >
+      {"```mermaid\nchart\n```"}
+    </Streamdown>
+  ));
+  try {
+    await waitFor(() => !!mounted.container.querySelector("button"));
+    expect(mounted.container.querySelector("button")?.textContent).toBe(
+      "Invalid chart: chart",
+    );
+    mounted.container.querySelector("button")!.click();
+    await waitFor(
+      () =>
+        mounted.container.querySelector("svg text")?.textContent ===
+        "Recovered",
+    );
+    expect(mounted.container.querySelector("script")).toBeNull();
+  } finally {
+    mounted.cleanup();
+  }
+});

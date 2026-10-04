@@ -1,3 +1,9 @@
+import type { Element, Parents } from "hast";
+import type {
+  ControlsConfig,
+  StreamdownTranslations,
+  IconMap,
+} from "./controls";
 import type { Component, JSX } from "solid-js";
 import type { PluggableList } from "unified";
 import type { Options as RemarkRehypeOptions } from "remark-rehype";
@@ -81,7 +87,7 @@ export interface StreamMarkdownProps {
 /** React Streamdown 2.7 core interface, with native Solid component overrides. */
 export interface StreamdownProps extends Omit<
   StreamMarkdownProps,
-  "content" | "stream" | "showCaret"
+  "content" | "stream" | "showCaret" | "urlTransform"
 > {
   children?: string;
   className?: string;
@@ -92,6 +98,34 @@ export interface StreamdownProps extends Omit<
   ];
   caret?: "block" | "circle";
   dir?: "ltr" | "rtl" | "auto";
-  mermaid?: { config?: import("./plugin-types").MermaidConfig };
+  controls?: ControlsConfig;
+  translations?: Partial<StreamdownTranslations>;
+  icons?: Partial<IconMap>;
+  codeBlockMaxHeight?: number | string;
+  tableMaxHeight?: number | string;
+  urlTransform?: StreamdownUrlTransform;
+  allowedElements?: readonly string[];
+  disallowedElements?: readonly string[];
+  allowElement?: (
+    node: Readonly<Element>,
+    index: number,
+    parent: Readonly<Parents> | undefined,
+  ) => boolean;
+  unwrapDisallowed?: boolean;
+  mermaid?: {
+    config?: import("./plugin-types").MermaidConfig;
+    errorComponent?: Component<MermaidErrorComponentProps>;
+  };
   lineNumbers?: boolean;
+}
+
+export type StreamdownUrlTransform = (
+  url: string,
+  key: string,
+  node: Readonly<Element>,
+) => string | null | undefined;
+export interface MermaidErrorComponentProps {
+  chart: string;
+  error: string;
+  retry: () => void;
 }

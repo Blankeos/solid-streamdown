@@ -24,6 +24,9 @@ native Solid implementation, not a React wrapper and not full upstream parity.
   diagram completions; SSR starts with code/diagram source rather than browser work.
 - Add opt-in word/character reveal, bounded cascading start times, reduced-motion
   support, and absolute schedules that survive tested DOM/Markdown rewrites.
+- Add code/table copy and download controls, translations and icon overrides,
+  max-height streaming scroll, Mermaid error/retry components, element filtering,
+  and the node-based URL callback while retaining the legacy callback contract.
 - Document package exports, compatibility limits, dependencies, and retained
   Apache-2.0 attribution for adapted upstream plugins/contracts.
 
@@ -44,9 +47,10 @@ or disabling animation for long responses.
 ### Scope and limitations
 
 See [the compatibility matrix](streamdown-parity.md). No full controls/UI parity:
-copy/download/fullscreen/pan-zoom, table controls, link confirmation, translations,
-portals, raw-HTML processing/security configuration and custom block splitting are
-not implemented. Native `dir="auto"` is not React's semantic-block direction logic.
+fullscreen/pan-zoom, Mermaid/image controls, link confirmation, portals,
+raw-HTML processing/security configuration and custom block splitting are not
+implemented. Code/table controls, supported translations/icons and max-height
+scrolling are implemented. Native `dir="auto"` is not React's semantic-block direction logic.
 
 URL filtering is not a general sanitizer; plugins/components/token attributes and
 styles are trusted code. Mermaid SVG has its own DOMPurify boundary, and upstream
@@ -66,10 +70,11 @@ repairs by default in streaming mode and requires explicit animation/caret opt-i
 
 ### Validation
 
-- `bun run test:run`: **132 unit tests in 9 files**.
-- `bun run test:browser`: **5 Chromium tests**, including native/published
+- `bun run test:run`: **135 unit tests in 9 files**.
+- `bun run test:browser`: **6 Chromium tests**, including native/published
   four-plugin rendering and updates, rapid reveal/backlog cleanup, reduced motion,
-  and the long-guide structural-rewrite regression.
+  the long-guide structural-rewrite regression, and functional clipboard/download,
+  reactive settings, element filtering and scroll-follow checks.
 - `bun run typecheck` and `bun run build`.
 - Node SSR smoke check against the server root export; source fallback for async
   features and synchronous math/CJK. This is not a full hydration audit.

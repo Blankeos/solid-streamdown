@@ -1,4 +1,10 @@
-import { Index, Show, useContext, type Component } from "solid-js";
+import {
+  Index,
+  Show,
+  createSignal,
+  useContext,
+  type Component,
+} from "solid-js";
 import { Dynamic } from "solid-js/web";
 import type { Element, ElementContent, Root, RootContent, Text } from "hast";
 // Match hast-util-to-jsx-runtime serialization of HTML token-list properties.
@@ -7,6 +13,8 @@ import { stringify as stringifyComma } from "comma-separated-tokens";
 import { stringify as stringifySpace } from "space-separated-tokens";
 import type { ComponentOverrides } from "./types";
 
+import { pinnedScroll } from "./pinned-scroll";
+import { BlockControls, tableText, maxHeight } from "./controls";
 import { FeatureBlock, FeatureContext, fencedCode } from "./feature-block";
 
 type HastChild = RootContent | ElementContent;
@@ -125,11 +133,82 @@ const HastElement: Component<HastElementProps> = (props) => {
   const features = useContext(FeatureContext);
   const feature = () =>
     !props.components?.pre &&
-    !!features?.plugins &&
+    (!!features?.plugins || features?.controls !== undefined) &&
     !!fencedCode(props.element());
+  const [format, setFormat] = createSignal<"csv" | "markdown" | "tsv">(
+    "markdown",
+  );
+  const separator = () => {
+    const config = features?.controls;
+    const table = typeof config === "object" ? config.table : undefined;
+    return typeof table === "object" ? table.csvSeparator : undefined;
+  };
   return (
-    <Show when={feature()} fallback={<HastHost {...props} />}>
-      <FeatureBlock element={props.element} />
+    <Show
+      when={
+        !props.components?.table &&
+        features?.tableMaxHeight !== undefined &&
+        props.element().tagName === "table"
+      }
+      fallback={
+        <Show when={feature()} fallback={<HastHost {...props} />}>
+          <FeatureBlock element={props.element} />
+        </Show>
+      }
+    >
+      <div class="sd-block" data-streamdown="table-wrapper">
+        <Show
+          when={
+            features?.controls !== false &&
+            !(
+              typeof features?.controls === "object" &&
+              features.controls.table === false
+            )
+          }
+        >
+          <div class="sd-controls">
+            <select
+              aria-label={features?.translations?.copyTable ?? "Copy table"}
+              disabled={features?.isAnimating}
+              value={format()}
+              onChange={(event) =>
+                setFormat(
+                  event.currentTarget.value as "csv" | "markdown" | "tsv",
+                )
+              }
+            >
+              <option value="markdown">
+                {features?.translations?.tableFormatMarkdown ?? "Markdown"}
+              </option>
+              <option value="csv">
+                {features?.translations?.tableFormatCsv ?? "CSV"}
+              </option>
+              <option value="tsv">
+                {features?.translations?.tableFormatTsv ?? "TSV"}
+              </option>
+            </select>
+            <BlockControls
+              kind="table"
+              format={format()}
+              text={() => tableText(props.element(), format(), separator())}
+              extension={format() === "markdown" ? "md" : format()}
+            />
+          </div>
+        </Show>
+        <div
+          ref={pinnedScroll(
+            () => features?.isAnimating ?? false,
+            () => !!maxHeight(features?.tableMaxHeight),
+          )}
+          class="sd-scroll"
+          style={{
+            "max-height": maxHeight(features?.tableMaxHeight),
+            overflow: "auto",
+          }}
+        >
+          <HastHost {...props} />
+        </div>
+      </div>
     </Show>
   );
 };

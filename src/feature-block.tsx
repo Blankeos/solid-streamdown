@@ -13,9 +13,12 @@ import DOMPurify from "dompurify";
 import type { Element } from "hast";
 import type { StreamdownProps } from "./types";
 import type { BundledLanguage } from "shiki";
+import { pinnedScroll } from "./pinned-scroll";
+import { BlockControls, maxHeight } from "./controls";
 import type { HighlightResult } from "./plugin-types";
 
-export const FeatureContext = createContext<StreamdownProps>();
+export const FeatureContext =
+  createContext<Omit<StreamdownProps, "urlTransform">>();
 
 export function fencedCode(
   element: Element,
@@ -62,8 +65,10 @@ export function FeatureBlock(props: { element: () => Element }) {
   const [svg, setSvg] = createSignal("");
   const [error, setError] = createSignal("");
   const id = createUniqueId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const [retry, setRetry] = createSignal(0);
   let revision = 0;
   createEffect(() => {
+    retry();
     const current = ++revision;
     const block = source();
     const plugin = context.plugins?.code;
@@ -127,49 +132,78 @@ export function FeatureBlock(props: { element: () => Element }) {
         <Show
           when={diagram()}
           fallback={
-            <pre
-              dir="ltr"
-              data-streamdown="code-block"
-              class="sd-code"
-              style={highlighted()?.rootStyle || undefined}
-            >
-              <code class={`language-${source().language}`}>
-                <Show when={highlighted()} fallback={source().code}>
-                  {(result) => (
-                    <Index each={result().tokens}>
-                      {(line, lineIndex) => (
-                        <>
-                          <span
-                            class="sd-code-line"
-                            data-line={
-                              context.lineNumbers === false
-                                ? undefined
-                                : lineIndex + 1
-                            }
-                          >
-                            <Index each={line()}>
-                              {(token) => (
-                                <span
-                                  {...token().htmlAttrs}
-                                  style={{
-                                    color: token().color,
-                                    "background-color": token().bgColor,
-                                    ...token().htmlStyle,
-                                  }}
-                                >
-                                  {token().content}
-                                </span>
-                              )}
-                            </Index>
-                          </span>
-                          {lineIndex < result().tokens.length - 1 ? "\n" : ""}
-                        </>
-                      )}
-                    </Index>
-                  )}
-                </Show>
-              </code>
-            </pre>
+            <div class="sd-block" data-streamdown="code-block-wrapper">
+              <div class="sd-controls">
+                <BlockControls
+                  kind="code"
+                  text={() => source().code}
+                  extension={
+                    (
+                      {
+                        javascript: "js",
+                        typescript: "ts",
+                        python: "py",
+                        rust: "rs",
+                        bash: "sh",
+                        markdown: "md",
+                        js: "js",
+                        ts: "ts",
+                        json: "json",
+                        html: "html",
+                        css: "css",
+                      } as Record<string, string>
+                    )[source().language] ?? "txt"
+                  }
+                />
+              </div>
+              <pre
+                ref={pinnedScroll(
+                  () => context.isAnimating ?? false,
+                  () => !!maxHeight(context.codeBlockMaxHeight),
+                )}
+                dir="ltr"
+                data-streamdown="code-block"
+                class="sd-code"
+                style={`${highlighted()?.rootStyle ?? ""};${maxHeight(context.codeBlockMaxHeight) ? `max-height:${maxHeight(context.codeBlockMaxHeight)};overflow:auto` : ""}`}
+              >
+                <code class={`language-${source().language}`}>
+                  <Show when={highlighted()} fallback={source().code}>
+                    {(result) => (
+                      <Index each={result().tokens}>
+                        {(line, lineIndex) => (
+                          <>
+                            <span
+                              class="sd-code-line"
+                              data-line={
+                                context.lineNumbers === false
+                                  ? undefined
+                                  : lineIndex + 1
+                              }
+                            >
+                              <Index each={line()}>
+                                {(token) => (
+                                  <span
+                                    {...token().htmlAttrs}
+                                    style={{
+                                      color: token().color,
+                                      "background-color": token().bgColor,
+                                      ...token().htmlStyle,
+                                    }}
+                                  >
+                                    {token().content}
+                                  </span>
+                                )}
+                              </Index>
+                            </span>
+                            {lineIndex < result().tokens.length - 1 ? "\n" : ""}
+                          </>
+                        )}
+                      </Index>
+                    )}
+                  </Show>
+                </code>
+              </pre>
+            </div>
           }
         >
           <div
@@ -188,7 +222,19 @@ export function FeatureBlock(props: { element: () => Element }) {
               <div innerHTML={svg()} />
             </Show>
             <Show when={error() && !context.isAnimating}>
-              <p role="alert">{error()}</p>
+              <Show
+                when={context.mermaid?.errorComponent}
+                fallback={<p role="alert">{error()}</p>}
+              >
+                {(ErrorComponent) => (
+                  <Dynamic
+                    component={ErrorComponent()}
+                    chart={source().code}
+                    error={error()}
+                    retry={() => setRetry((value) => value + 1)}
+                  />
+                )}
+              </Show>
             </Show>
           </div>
         </Show>

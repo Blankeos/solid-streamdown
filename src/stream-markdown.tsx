@@ -1,5 +1,6 @@
 import {
   Show,
+  splitProps,
   mergeProps,
   createEffect,
   createMemo,
@@ -57,6 +58,16 @@ const getPluginOptions = (
 };
 
 interface CoreProps extends StreamMarkdownProps {
+  controls?: StreamdownProps["controls"];
+  translations?: StreamdownProps["translations"];
+  icons?: StreamdownProps["icons"];
+  codeBlockMaxHeight?: number | string;
+  tableMaxHeight?: number | string;
+  nodeUrlTransform?: StreamdownProps["urlTransform"];
+  allowedElements?: StreamdownProps["allowedElements"];
+  disallowedElements?: StreamdownProps["disallowedElements"];
+  allowElement?: StreamdownProps["allowElement"];
+  unwrapDisallowed?: boolean;
   plugins?: StreamdownProps["plugins"];
   shikiTheme?: StreamdownProps["shikiTheme"];
   mermaid?: StreamdownProps["mermaid"];
@@ -135,6 +146,11 @@ const MarkdownCore: Component<CoreProps> = (props) => {
       rehypePlugins: props.rehypePlugins,
       remarkRehypeOptions: props.remarkRehypeOptions,
       urlTransform: props.urlTransform,
+      nodeUrlTransform: props.nodeUrlTransform,
+      allowedElements: props.allowedElements,
+      disallowedElements: props.disallowedElements,
+      allowElement: props.allowElement,
+      unwrapDisallowed: props.unwrapDisallowed,
     });
     const active = shouldAnimate();
     const key = animatedKey();
@@ -225,7 +241,13 @@ const MarkdownCore: Component<CoreProps> = (props) => {
   });
 
   return (
-    <FeatureContext.Provider value={props}>
+    <FeatureContext.Provider
+      value={mergeProps(props, {
+        get isAnimating() {
+          return effectiveIsAnimating();
+        },
+      })}
+    >
       <div
         dir={props.dir}
         data-caret={props.caret}
@@ -252,10 +274,24 @@ export const StreamMarkdown: Component<StreamMarkdownProps> = (props) => (
 
 /** Native Solid interface with React Streamdown defaults, sharing the private core. */
 export const Streamdown: Component<StreamdownProps> = (props) => {
+  const [urlProps, rest] = splitProps(props, ["urlTransform"]);
   const coreProps = mergeProps(
-    { parseIncompleteMarkdown: true, isAnimating: false, lineNumbers: true },
-    props,
     {
+      parseIncompleteMarkdown: true,
+      isAnimating: false,
+      lineNumbers: true,
+      controls: true,
+      codeBlockMaxHeight: 400,
+      tableMaxHeight: 300,
+    },
+    rest,
+    {
+      get urlTransform() {
+        return undefined;
+      },
+      get nodeUrlTransform() {
+        return urlProps.urlTransform;
+      },
       get content() {
         return props.children ?? "";
       },

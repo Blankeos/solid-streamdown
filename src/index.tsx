@@ -17,3 +17,18 @@ export type {
   StreamdownProps,
 } from "./types";
 export type * from "./plugin-types";
+
+export { defaultTranslations, defaultIcons } from "./controls";
+export type {
+  ControlsConfig,
+  CopyControlConfig,
+  DownloadControlConfig,
+  CSVSeparator,
+  StreamdownTranslations,
+  IconMap,
+  IconComponent,
+} from "./controls";
+export type {
+  StreamdownUrlTransform,
+  MermaidErrorComponentProps,
+} from "./types";

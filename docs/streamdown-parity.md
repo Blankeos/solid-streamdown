@@ -32,15 +32,33 @@ interface and feature-plugin subset, not full API/UI/security/performance parity
 - Explicit ltr/rtl use native `dir`; code remains ltr. Native `auto` differs from
   React's majority-based per-semantic-block direction resolution.
 
+- Code and table copy/download controls, enabled by default in `Streamdown`,
+  disabled during `isAnimating`. `controls` accepts a boolean or nested code/table
+  configuration; code copy callbacks and download filename stems are supported.
+  Tables export Markdown/CSV/TSV for copy and Markdown/CSV for download, with
+  `csvSeparator`. Accessible native select/buttons replace React dropdowns.
+- Reactive `translations` and native Solid `icons` overrides for the supported
+  controls; exported defaults and types intentionally cover this subset only.
+- `codeBlockMaxHeight` (400) and `tableMaxHeight` (300), numbers in pixels or CSS
+  strings. Zero disables the cap. Streaming scroll follows the bottom until the
+  reader scrolls away; a new streaming session resumes following.
+- Mermaid `errorComponent` receives chart/error/retry and retries safely without
+  bypassing SVG sanitation. `Streamdown.urlTransform` receives the HAST node;
+  legacy `StreamMarkdown` retains its tag-name argument. Native AST filtering via
+  `allowedElements`, `disallowedElements`, `allowElement(node,index,parent)` and
+  `unwrapDisallowed` runs before rendering. An allowlist takes precedence.
+
 ## Deliberate limitations / not full parity
 
-- No built-in copy/download/fullscreen/pan-zoom controls, table controls, sticky
-  scrolling/max-height, export actions, translations, icons, or portal overlays.
-  These props are not advertised as implemented.
+- No fullscreen/pan-zoom, Mermaid/image controls, or portal overlays. Controls,
+  translations and icons expose only the implemented code/table subset, not
+  unsupported options. Code extension mapping covers common languages only;
+  unrecognized languages download as `.txt`. Table exports use native AST text,
+  not custom override DOM, and do not reproduce every React Markdown escaping
+  convention. Code/table overrides bypass the corresponding built-in controls.
 - No link safety confirmation modal, raw HTML processing, custom allowed tags,
-  HTML indentation normalization, literal tags, element filtering, autolink
+  HTML indentation normalization, literal tags, autolink
   protocol configuration, custom BlockComponent, or configurable block splitting.
-  The existing URL transform receives a tag-name string, not React's HAST node.
 - Raw HTML remains disabled by default. URL filtering is not a full HTML sanitizer;
   user-supplied rehype plugins/component overrides are trusted extensions.
   Mermaid SVG sanitation preserves foreignObject labels, removes script/event
@@ -51,7 +69,8 @@ interface and feature-plugin subset, not full API/UI/security/performance parity
   synchronous (`runSync`), not an async plugin pipeline.
 - Mermaid rendering already begun is not abortable in its upstream interface;
   stale completions are ignored, but rendering still consumes work. Mermaid
-  bindFunctions are not invoked. Core Mermaid errorComponent is not implemented.
+  bindFunctions are not invoked: arbitrary upstream callbacks can mutate the
+  sanitized DOM, so interaction binding awaits a separate trusted-plugin policy.
 - Animation uses absolute schedules and HAST source-position identities, with a
   rendered-offset fallback for positionless trees. Tested appends and structural
   list/table/reference rewrites no longer restart completed reveals on reinsertion.
@@ -68,12 +87,14 @@ interface and feature-plugin subset, not full API/UI/security/performance parity
 
 ## Validation
 
-Validated: `bun run test:run` (**132 unit tests, 9 files**), `bun run typecheck`,
-`bun run build`, and `bun run test:browser` (**5 Chromium tests**: native/published
+Validated: `bun run test:run` (**135 unit tests, 9 files**), `bun run typecheck`,
+`bun run build`, and `bun run test:browser` (**6 Chromium tests**: native/published
 four-plugin rendering and updates, rapid reveal/backlog cleanup, reduced motion,
-long-guide rewrite visibility). Browser tests live separately from Vitest.
+long-guide rewrite visibility, browser copy/download, controls reactivity,
+filtering and pinned scroll). Browser tests live separately from Vitest.
 
-Node SSR smoke validation exercises native four-plugin output; it is not a full
+Node SSR smoke validation exercises native four-plugin output, controls and
+filtering without browser globals; it is not a full
 hydration audit. The package root has Solid JSX, browser development/production,
 Node server and declaration exports under `dist/index/`; feature JS/declarations
 are under `dist/{code,math,cjk,mermaid}/`. Styles export separately as `./styles.css`.

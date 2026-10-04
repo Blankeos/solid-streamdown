@@ -22,3 +22,27 @@ assert.match(
 );
 assert.equal(document.querySelector("[data-streamdown=mermaid] svg"), null);
 console.log("Built package SSR math/CJK and Mermaid fallback passed");
+const controlsHtml = renderToString(() =>
+  Streamdown({
+    children:
+      "```js\nconst value = 1;\n```\n\n| A | B |\n| --- | --- |\n| x | y |\n\n**hidden** [link](https://example.org)",
+    controls: { code: { download: { filename: "source" } }, table: true },
+    disallowedElements: ["strong"],
+    urlTransform: (url, key, node) => (node.tagName === "a" ? "/safe" : url),
+  }),
+);
+const controlsDocument = new JSDOM(controlsHtml).window.document;
+assert.ok(
+  controlsDocument.querySelector("[data-streamdown=code-block-copy-button]"),
+);
+assert.ok(
+  controlsDocument.querySelector("[data-streamdown=table-copy-button]"),
+);
+assert.equal(controlsDocument.querySelector("strong"), null);
+assert.equal(
+  controlsDocument.querySelector("a")?.getAttribute("href"),
+  "/safe",
+);
+console.log(
+  "Built package SSR controls and filtering passed without browser globals",
+);

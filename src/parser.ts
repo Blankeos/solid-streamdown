@@ -17,6 +17,11 @@ export type { UrlTransform } from "./safe-url";
 
 export interface ParseOptions {
   components?: ComponentOverrides;
+  nodeUrlTransform?: import("./types").StreamdownUrlTransform;
+  allowedElements?: readonly string[];
+  disallowedElements?: readonly string[];
+  allowElement?: import("./types").StreamdownProps["allowElement"];
+  unwrapDisallowed?: boolean;
   plugins?: import("./plugin-types").PluginConfig;
   /** Whether content is streaming (repairs incomplete markdown first) */
   isStreaming?: boolean;
@@ -59,13 +64,19 @@ function createProcessor(options?: ParseOptions) {
     .use(options?.rehypePlugins ?? []);
 }
 
-function sanitizeElementUrls(node: Element, transform: UrlTransform): void {
+function sanitizeElementUrls(
+  node: Element,
+  transform: UrlTransform,
+  nodeTransform?: import("./types").StreamdownUrlTransform,
+): void {
+  const rewrite: UrlTransform = (url, key, tag) =>
+    nodeTransform ? nodeTransform(url, key, node) : transform(url, key, tag);
   const properties = node.properties;
   if (!properties) {
     return;
   }
   if (node.tagName === "a" && typeof properties.href === "string") {
-    const next = transform(properties.href, "href", node.tagName);
+    const next = rewrite(properties.href, "href", node.tagName);
     if (next == null) {
       delete properties.href;
     } else {
@@ -74,7 +85,7 @@ function sanitizeElementUrls(node: Element, transform: UrlTransform): void {
   }
   if (node.tagName === "img") {
     if (typeof properties.src === "string") {
-      const next = transform(properties.src, "src", node.tagName);
+      const next = rewrite(properties.src, "src", node.tagName);
       if (next == null) {
         delete properties.src;
       } else {
@@ -89,7 +100,7 @@ function sanitizeElementUrls(node: Element, transform: UrlTransform): void {
       const value = properties[key];
       if (typeof value === "string") {
         const next = sanitizeSrcset(value, (url, _key, tagName) =>
-          transform(url, key, tagName),
+          rewrite(url, key, tagName),
         );
         if (next == null) {
           delete properties[key];
@@ -101,16 +112,34 @@ function sanitizeElementUrls(node: Element, transform: UrlTransform): void {
   }
 }
 
-function sanitizeTreeUrls(
-  nodes: RootContent[] | ElementContent[],
-  transform: UrlTransform,
-): void {
-  for (const node of nodes) {
+function postprocessTree(parent: Root | Element, options?: ParseOptions): void {
+  for (let index = 0; index < parent.children.length;) {
+    const node = parent.children[index];
     if (node.type !== "element") {
+      index++;
       continue;
     }
-    sanitizeElementUrls(node, transform);
-    sanitizeTreeUrls(node.children, transform);
+    sanitizeElementUrls(
+      node,
+      options?.urlTransform ?? defaultSafeUrlTransform,
+      options?.nodeUrlTransform,
+    );
+    const remove = options?.allowedElements
+      ? !options.allowedElements.includes(node.tagName)
+      : !!options?.disallowedElements?.includes(node.tagName);
+    if (
+      remove ||
+      (options?.allowElement && !options.allowElement(node, index, parent))
+    ) {
+      parent.children.splice(
+        index,
+        1,
+        ...(options?.unwrapDisallowed ? node.children : []),
+      );
+      continue;
+    }
+    postprocessTree(node, options);
+    index++;
   }
 }
 
@@ -133,10 +162,7 @@ export function parseMarkdownTree(
   const prepared = options?.isStreaming ? remend(content) : content;
   const processor = createProcessor(options);
   const tree = processor.runSync(processor.parse(prepared)) as unknown as Root;
-  sanitizeTreeUrls(
-    tree.children,
-    options?.urlTransform ?? defaultSafeUrlTransform,
-  );
+  postprocessTree(tree, options);
   return tree;
 }
 

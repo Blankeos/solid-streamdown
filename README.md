@@ -197,3 +197,32 @@ contracts: Apache-2.0, Copyright 2023 Vercel, Inc.; see
 [ATTRIBUTION.md](ATTRIBUTION.md) and [LICENSE-STREAMDOWN](LICENSE-STREAMDOWN).
 The legacy parser/block utilities also reference
 [svelte-streamdown](https://github.com/beynar/svelte-streamdown) (MIT).
+
+### Built-in controls
+
+```tsx
+<Streamdown
+  controls={{
+    code: { copy: true, download: { filename: "source" } },
+    table: { csvSeparator: ";" },
+  }}
+  codeBlockMaxHeight={400}
+  tableMaxHeight="20rem"
+  translations={{ copyCode: "Copy source" }}
+  isAnimating={isStreaming()}
+>
+  {markdown()}
+</Streamdown>
+```
+
+Code and table controls default on and are disabled while animating. Set
+`controls={false}` or disable individual actions. Code copy accepts
+`{ onCopy, onError }`; download filenames are stems (extensions are appended).
+Tables offer Markdown/CSV/TSV copy and Markdown/CSV download. `icons` accepts
+native Solid `CopyIcon`, `CheckIcon`, and `DownloadIcon` overrides.
+
+`Streamdown` also supports native element filtering (`allowedElements`,
+`disallowedElements`, `allowElement`, `unwrapDisallowed`), HAST-node
+`urlTransform`, and Mermaid `errorComponent` with `chart`, `error`, and `retry`.
+The legacy `StreamMarkdown.urlTransform` still receives a tag-name string.
+See the compatibility matrix for the precise supported subset and limitations.

@@ -98,9 +98,48 @@ function Plugins() {
     </>
   );
 }
+function Controls() {
+  const [lines, setLines] = createSignal(1);
+  const [active, setActive] = createSignal(false);
+  const [controls, setControls] = createSignal(true);
+  return (
+    <>
+      <button onClick={() => setLines((value) => value + 20)}>
+        Append lines
+      </button>
+      <button onClick={() => setActive((value) => !value)}>
+        Toggle streaming
+      </button>
+      <button onClick={() => setControls((value) => !value)}>
+        Toggle controls
+      </button>
+      <Streamdown
+        controls={controls()}
+        isAnimating={active()}
+        codeBlockMaxHeight={60}
+        tableMaxHeight={60}
+        translations={{ copyCode: "Copy source" }}
+        icons={{ CopyIcon: () => <span data-custom-icon="true">C</span> }}
+        urlTransform={(url, key, node) =>
+          node.tagName === "a" ? `/proxy?url=${encodeURIComponent(url)}` : url
+        }
+        disallowedElements={["strong"]}
+        unwrapDisallowed
+      >
+        {"```js\n" +
+          Array.from({ length: lines() }, (_, index) =>
+            index === 0 ? "const answer = 42;" : `// line ${index}`,
+          ).join("\n") +
+          "\n```\n\n| Name | Value |\n| --- | --- |\n| alpha | a,b |\n\n**Filtered** [Link](https://example.org)"}
+      </Streamdown>
+    </>
+  );
+}
 render(
   () =>
-    new URLSearchParams(location.search).has("reveal") ? (
+    new URLSearchParams(location.search).has("controls") ? (
+      <Controls />
+    ) : new URLSearchParams(location.search).has("reveal") ? (
       <Reveal />
     ) : (
       <Plugins />
