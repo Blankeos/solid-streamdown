@@ -75,10 +75,19 @@
 }
 
 [data-sd-animate] {
-  /* Units include trailing spaces; preserve them when custom effects use inline-block. */
-  white-space: pre-wrap;
+  white-space: inherit;
   animation: var(--sd-animation, sd-fadeIn) var(--sd-duration, 150ms)
     var(--sd-easing, ease) var(--sd-delay, 0ms) both;
+}
+
+/* Whitespace shares the preceding token's timing without its transform box.
+ * Native inline flow collapses/wraps spaces, including Markdown soft newlines;
+ * opacity also prevents underlined links painting spaces ahead of their word. */
+[data-sd-animate-space] {
+  display: inline;
+  white-space: inherit;
+  animation: sd-fadeIn var(--sd-duration, 150ms) var(--sd-easing, ease)
+    var(--sd-delay, 0ms) both;
 }
 
 /*
@@ -100,7 +109,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-sd-animate] {
+  [data-sd-animate],
+  [data-sd-animate-space] {
     animation: none;
   }
   [data-sd-animate-marker]::marker {

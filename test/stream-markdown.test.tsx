@@ -86,7 +86,14 @@ describe("StreamMarkdown renderer", () => {
     await flush();
 
     const spans = animateSpans(container);
-    expect(spans.map((s) => s.textContent)).toEqual(["Hello ", "world"]);
+    expect(spans.map((s) => s.textContent)).toEqual(["Hello", "world"]);
+    expect(
+      Array.from(
+        container.querySelectorAll("[data-sd-animate-space]"),
+        (s) => s.textContent,
+      ),
+    ).toEqual([" "]);
+    expect(container.textContent).toBe("Hello world");
     // Same paragraph, same first word — appended words get new slots.
     expect(container.querySelectorAll("p")).toHaveLength(1);
     expect(container.contains(first)).toBe(true);
@@ -304,7 +311,13 @@ describe("StreamMarkdown renderer", () => {
     await flush();
     expect(container.textContent).toBe("Hello, world!");
     const spans = animateSpans(container);
-    expect(spans.map((s) => s.textContent).join("")).toBe("Hello, world!");
+    expect(spans.map((s) => s.textContent)).toEqual(["Hello,", "world!"]);
+    expect(
+      Array.from(
+        container.querySelectorAll("[data-sd-animate-space]"),
+        (s) => s.textContent,
+      ),
+    ).toEqual([" "]);
     cleanup();
   });
 

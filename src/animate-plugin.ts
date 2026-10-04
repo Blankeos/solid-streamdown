@@ -294,10 +294,10 @@ const stampCheckbox = (
 };
 
 /**
- * Split text into animateable units. Trailing whitespace is glued onto the
- * preceding visible token so it lives inside the same `<span>` — otherwise a
- * bare space under an underlined `<a>` paints the underline before the word
- * fades in.
+ * Split text into scheduling units. Trailing whitespace follows the preceding
+ * visible token's timing: a bare space under an underlined <a> would paint its
+ * underline before the word reveals. Rendering separates the whitespace below
+ * without allocating another schedule slot.
  */
 const splitByWord = (text: string): string[] => {
   const parts: string[] = [];
@@ -559,25 +559,51 @@ export function createAnimatePlugin(
       );
       let markerStamped = false;
       let local = 0;
-      const replacement: Array<Element | Text> = parts.map((part) => {
-        const identity = identityFor(textNode, local, counter.count);
-        local += part.length;
-        const partStart = counter.count;
-        counter.count += part.length;
-        if (WHITESPACE_ONLY_RE.test(part)) {
-          return { type: "text", value: part } as Text;
-        }
-        const { duration, delay } = timingFor(identity, partStart);
-        if (liAncestor && needsMarker && !markerStamped) {
-          stampMarker(liAncestor, duration, delay, config.easing, partStart);
-          stampCheckbox(liAncestor, config, duration, delay, partStart);
-          liAncestor.properties["data-sd-key"] = identity;
-          const checkbox = findCheckbox(liAncestor);
-          if (checkbox) checkbox.properties["data-sd-key"] = identity;
-          markerStamped = true;
-        }
-        return makeSpan(part, config, delay, partStart, duration, identity);
-      });
+      const replacement: Array<Element | Text> = parts.flatMap<Element | Text>(
+        (part) => {
+          const identity = identityFor(textNode, local, counter.count);
+          local += part.length;
+          const partStart = counter.count;
+          counter.count += part.length;
+          if (WHITESPACE_ONLY_RE.test(part)) {
+            return [{ type: "text", value: part } as Text];
+          }
+          const { duration, delay } = timingFor(identity, partStart);
+          if (liAncestor && needsMarker && !markerStamped) {
+            stampMarker(liAncestor, duration, delay, config.easing, partStart);
+            stampCheckbox(liAncestor, config, duration, delay, partStart);
+            liAncestor.properties["data-sd-key"] = identity;
+            const checkbox = findCheckbox(liAncestor);
+            if (checkbox) checkbox.properties["data-sd-key"] = identity;
+            markerStamped = true;
+          }
+          // Intentional correctness fix over upstream's glued whitespace: an
+          // inline-block/pre-wrap transform host preserves edge/repeated spaces
+          // and turns a soft newline into a zero-width break. Keep the visible
+          // token transformable, but let whitespace participate in native inline
+          // flow. Its opacity reveal still hides link underlines until the same
+          // word starts; custom transform keyframes must not make spaces atomic.
+          const visible = part.trimEnd();
+          const spans = [
+            makeSpan(visible, config, delay, partStart, duration, identity),
+          ];
+          if (visible.length < part.length) {
+            const spaceOffset = partStart + visible.length;
+            const space = makeSpan(
+              part.slice(visible.length),
+              { ...config, animation: "fadeIn" },
+              delay,
+              spaceOffset,
+              duration,
+              `${identityFor(textNode, local - part.length + visible.length, spaceOffset)}:space`,
+            );
+            delete space.properties["data-sd-animate"];
+            space.properties["data-sd-animate-space"] = true;
+            spans.push(space);
+          }
+          return spans;
+        },
+      );
       siblings.splice(index, 1, ...(replacement as unknown as Array<Node>));
     }
 

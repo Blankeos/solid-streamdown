@@ -12,10 +12,10 @@ Verified against the completed full-port checkout:
 
 | Verification                                              | Result                                                |
 | --------------------------------------------------------- | ----------------------------------------------------- |
-| `bun run test:run`                                        | 194 tests passed across 16 files                      |
+| `bun run test:run`                                        | 196 tests passed across 16 files                      |
 | `bun run typecheck`, `bun run check:fix`, `bun run build` | Passed                                                |
 | `bun run test:types`                                      | Built-package consumer types passed                   |
-| `bun run test:browser`                                    | 19 Chromium tests passed across 10 files              |
+| `bun run test:browser`                                    | 31 Chromium tests passed across 11 files              |
 | `bun run test:hydration`                                  | 1 separate Chromium hydration test passed             |
 | `bun run test:ssr`                                        | Node SSR without browser globals passed               |
 | Gittydocs 0.0.7 build                                     | 30 static routes, 30 Markdown exports and `/llms.txt` |
@@ -44,6 +44,25 @@ Mermaid deferral/fit/navigation, native SVG and light/dark theme styles. Hydrati
 uses built Node and browser entrypoints and checks retained SSR nodes, async
 highlighting and portal disposal without browser errors.
 
+### Native whitespace maintenance evidence
+
+Trailing whitespace now renders in a separate inline `data-sd-animate-space`
+host with the preceding glyph's delay, duration and easing, without allocating
+new timeline slots. Visible `data-sd-animate` spans contain no trailing
+whitespace, and custom transform glyph hosts remain intact. Both hosts inherit
+the parent's `white-space` semantics; the whitespace host uses a timed opacity
+reveal so an ancestor link's underline does not paint over it before reveal.
+This is an intentional native correctness deviation from pinned React 2.7.0's
+glued whitespace DOM, not a Solid framework limitation.
+
+`browser/whitespace.spec.ts` compares animated and unanimated native layout in
+char/word modes at wide/narrow widths: soft newlines, repeated/edge whitespace,
+NBSP, inline code, inherited `pre-wrap`, and live-to-settled output. It also
+covers reduced motion, actual CSS `Animation` retention on plain-text append,
+inline fade kerning controls, and real screenshot pixels proving that link
+whitespace underline ink is absent before reveal and present afterward. The
+12 whitespace tests are included in the verified browser total above.
+
 ## Implemented source and fixture map
 
 Checked items are implemented and mapped to passing fixtures. These checks
@@ -63,6 +82,7 @@ possible extension or performance characteristic.
 | [x] Public composables, context, icon/translation types and prefix behavior                       | `index.tsx`, `public-components.tsx`, `controls.tsx`, `streamdown-context.ts`, `ui-utils.tsx`                               | `composition-parity.test.tsx`, `ui-fidelity.test.tsx`, `typechecks/`                                                                             |
 | [x] Native provider factories, custom renderer metadata and alternative-provider contracts        | `plugins/`, `plugin-types.ts`, `feature-block.tsx`                                                                          | `contracts-parity.test.tsx`, `composition-parity.test.tsx`, `streamdown.test.tsx`, `browser/plugins.spec.ts`                                     |
 | [x] Reveal continuity, rewrites, reduced motion, append sessions and pinned scrolling             | `animate-plugin.ts`, `hast-render.tsx`, `pinned-scroll.ts`                                                                  | `animate-plugin.test.ts`, `streamdown.test.tsx`, `browser/reveal.spec.ts`, `browser/long-reveal.spec.ts`, `browser/session-reveal.spec.ts`       |
+| [x] Native whitespace flow, inherited white-space and shared glyph/space reveal timing            | `animate-plugin.ts`, `styles.css`                                                                                           | `animate-plugin.test.ts`, `stream-markdown.test.tsx`, `browser/whitespace.spec.ts`                                                               |
 | [x] Async scheduling, offscreen deferral, serialized/coalesced diagrams, stale results and themes | `feature-block.tsx`, `mermaid.tsx`, `code-block.tsx`                                                                        | `scheduling-parity.test.tsx`, `ui-fidelity.test.tsx`, `browser/scheduling-parity.spec.ts`, `browser/theme-parity.spec.ts`                        |
 | [x] SSR-safe public initialization and hydration fixtures                                         | `index.tsx`, `portal.tsx`, package conditional exports                                                                      | `browser/ssr-smoke.mjs`, `browser/hydration.spec.ts`, `hydration/`                                                                               |
 
@@ -79,6 +99,13 @@ input; unchanged blocks have content-keyed parsing memos, while references and
 footnotes can require a document-wide parse. This is not constant-time parsing.
 Source-based reveal identity is best-effort across transformed or positionless
 ASTs. Async providers may finish obsolete work; stale results must not reach DOM.
+
+Whitespace correctness does not guarantee identical shaping or line breaking
+for every consumer style. Consumer-imposed inline-block char transform hosts
+can interrupt cross-boundary kerning and permit midword wrapping; inline fade
+hosts retain native shaping within the fixture's geometry tolerance. The
+plain-text append retention evidence does not cover link-content rewrites,
+which may remount animation hosts.
 
 Custom unified plugins/components/policies are trusted application extensions.
 Replacing default processing can remove safety guarantees. Confirmation is not

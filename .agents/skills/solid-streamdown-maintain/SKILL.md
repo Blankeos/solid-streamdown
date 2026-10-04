@@ -18,9 +18,13 @@ Read root `CLAUDE.md`, `docs/streamdown-parity.md`, `docs/legacy.mdx`, and the s
 
 ## Contract
 
-Aim for 1:1 native Solid API/behavior compatibility with the exact target, not a React wrapper. Solid `Component`/`JSX`, reactive props, refs and portal ownership necessarily differ. Remaining gaps are implementation work, not permanent Solid limitations. The full functional surface is implemented with mapped fixtures; do not declare exhaustive performance/security parity based only on export names or passing counts. Verified baseline: 194 unit tests across 16 files, 19 Chromium tests, 1 separate hydration test, built-package consumer types and Node SSR. Record fresh results after every update; historical counts are not current evidence.
+Aim for 1:1 native Solid API/behavior compatibility with the exact target, not a React wrapper. Solid `Component`/`JSX`, reactive props, refs and portal ownership necessarily differ. Remaining gaps are implementation work, not permanent Solid limitations. The full functional surface is implemented with mapped fixtures; do not declare exhaustive performance/security parity based only on export names or passing counts. Verified baseline: 196 unit tests across 16 files, 31 Chromium tests across 11 files, 1 separate hydration test, built-package consumer types and Node SSR. Record fresh results after every update; historical counts are not current evidence.
 
 Preserve legacy content/stream precedence, repair-while-active defaults, caret default, stream accessors and URL callback shape. Keep direct Streamdown defaults distinct. Native provider imports are `solid-streamdown/{code,math,cjk,mermaid}`; component-valued contracts must be Solid. Do not add React runtime peers to compensate for an unfinished port.
+
+Native whitespace deliberately deviates from pinned React 2.7.0's glued whitespace DOM for correctness, not because Solid cannot match it. Keep trailing whitespace out of visible `data-sd-animate` spans: render it in inline `data-sd-animate-space` hosts sharing the preceding glyph's delay, duration and easing without new timeline slots. Preserve custom transform glyph hosts, inherit the parent's `white-space` semantics on both hosts, and retain timed opacity on spaces so ancestor link underlines cannot paint before reveal. Do not restore glued/pre-wrap whitespace to transform boxes just to match upstream DOM.
+
+Consumer-imposed inline-block char hosts can interrupt kerning and permit midword wrapping; this is not a universal shaping/layout fix. Inline fade controls verify native shaping within the existing geometry tolerance. Plain-text append retains real `Animation` objects in the whitespace fixture; link-content rewrites may still remount hosts and are outside that retention evidence.
 
 ## Update procedure
 
@@ -50,6 +54,10 @@ bun run docs:build
 Install Playwright Chromium if absent: `bunx playwright install chromium`. Run a built-package Node SSR smoke check without browser globals, then hydration/browser fixtures separately. Record commands, exact counts/outcomes, source revision and unverified cases. Historical counts in docs are not current evidence. Run formatter with ownership coordination: it touches multiple files.
 
 Test append streams, settled incomplete input, static aliases, list/table/reference rewrites, reactive component replacement, disposal while async work is pending, reduced motion, controls/scroll, RTL semantics, portal focus/cleanup and hostile HTML/URLs. Load the project's test-authoring skill before writing tests when available.
+
+For whitespace maintenance, keep `test/browser/whitespace.spec.ts` coverage for char/word modes, wide/narrow layout, soft newlines, repeated/edge spaces, NBSP, inline code, inherited `pre-wrap`, live-to-settled output, reduced motion, plain-text append host/real `Animation` retention and actual screenshot underline paint (absent before reveal, present afterward). Text equality or computed opacity alone does not prove whitespace layout or underline paint.
+
+The verified browser baseline includes 12 whitespace tests. See `docs/streamdown-parity.md` for verification results and evidence boundaries.
 
 ## Docs and integration
 

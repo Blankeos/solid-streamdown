@@ -14,6 +14,7 @@ import "katex/dist/katex.min.css";
 import "./reveal.css";
 
 import { longGuide } from "./long-guide";
+import { Whitespace } from "./whitespace";
 
 const initial =
   "**中文。**测试\n\n$$\nx^2\n$$\n\n```js\nconst answer = 42;\n```\n\n```mermaid\ngraph TD\n A[Alpha] --> B[Beta]\n```";
@@ -138,7 +139,9 @@ function Controls() {
 }
 render(
   () =>
-    new URLSearchParams(location.search).has("controls") ? (
+    new URLSearchParams(location.search).has("whitespace") ? (
+      <Whitespace />
+    ) : new URLSearchParams(location.search).has("controls") ? (
       <Controls />
     ) : new URLSearchParams(location.search).has("reveal") ? (
       <Reveal />

@@ -54,12 +54,12 @@ const styleOf = (el: Element): string =>
   typeof el.properties?.style === "string" ? el.properties.style : "";
 
 describe("createAnimatePlugin", () => {
-  it("wraps words and glues trailing whitespace into the preceding span", () => {
+  it("wraps visible words separately from their timed whitespace", () => {
     const { tree } = apply("Hello world");
     const spans = animateSpans(tree);
     expect(
       spans.map((s) => textOf({ type: "root", children: [s] } as Root)),
-    ).toEqual(["Hello ", "world"]);
+    ).toEqual(["Hello", "world"]);
     expect(textOf(tree)).toBe("Hello world");
   });
 
@@ -69,15 +69,146 @@ describe("createAnimatePlugin", () => {
     expect(animateSpans(tree)).toHaveLength(0);
   });
 
-  it("splits characters with grapheme awareness and glues spaces", () => {
+  it("splits characters with grapheme awareness and separates spaces", () => {
     const plugin = createAnimatePlugin({ sep: "char" });
     const { tree } = apply("Hi there", plugin);
     const spans = animateSpans(tree);
-    // H, i+space, t, h, e, r, e
+    // H, i, t, h, e, r, e; the space shares i's timing.
     expect(spans[0].children[0]).toMatchObject({ value: "H" });
-    expect(spans[1].children[0]).toMatchObject({ value: "i " });
+    expect(spans[1].children[0]).toMatchObject({ value: "i" });
     expect(textOf(tree)).toBe("Hi there");
   });
+
+  it.each(["word", "char"] as const)(
+    "%s whitespace preserves text and source offsets without spending schedule slots",
+    (sep) => {
+      // Unlike the browser geometry regression, this guards the plugin's source
+      // identity and timeline contract: splitting a space must not add a reveal
+      // slot, split a grapheme, or lose progress during a source-preserving rewrite.
+      let now = 0;
+      const timeline = createAnimateTimeline({ now: () => now });
+      const plugin = createAnimatePlugin({
+        sep,
+        timeline,
+        animation: "customTransform",
+        duration: 300,
+        easing: "linear",
+      });
+      const text = "  👩‍💻 \n e\u0301  end\t";
+      const makeTree = (value = text): Root => ({
+        type: "root",
+        children: [
+          {
+            type: "element",
+            tagName: "a",
+            properties: { href: "/" },
+            children: [
+              {
+                type: "text",
+                value,
+                position: {
+                  start: { line: 1, column: 101, offset: 100 },
+                  end: { line: 2, column: 1, offset: 100 + value.length },
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const expectedTokens =
+        sep === "word"
+          ? ["👩‍💻", "e\u0301", "end"]
+          : ["👩‍💻", "e\u0301", "e", "n", "d"];
+      const expectedOffsets =
+        sep === "word" ? [2, 10, 14] : [2, 10, 14, 15, 16];
+      const assertTree = (tree: Root, value = text) => {
+        const visible = animateSpans(tree);
+        expect(
+          visible.map((span) => textOf({ type: "root", children: [span] })),
+        ).toEqual(
+          value === text
+            ? expectedTokens
+            : [
+                ...expectedTokens,
+                ...(sep === "word" ? ["next"] : ["n", "e", "x", "t"]),
+              ],
+        );
+        expect(
+          visible
+            .slice(0, expectedTokens.length)
+            .map((span) => span.properties["data-sd-offset"]),
+        ).toEqual(expectedOffsets);
+        expect(
+          visible
+            .slice(0, expectedTokens.length)
+            .map((span) => span.properties["data-sd-key"]),
+        ).toEqual(expectedOffsets.map((offset) => `source:${100 + offset}`));
+        const spaces = collectElements(tree, "span").filter(
+          (span) => span.properties["data-sd-animate-space"] != null,
+        );
+        expect(
+          spaces.map((span) => textOf({ type: "root", children: [span] })),
+        ).toEqual([" \n ", "  ", "\t"]);
+        expect(spaces.map((span) => span.properties["data-sd-offset"])).toEqual(
+          [7, 12, 17],
+        );
+        expect(spaces.map((span) => span.properties["data-sd-key"])).toEqual([
+          "source:107:space",
+          "source:112:space",
+          "source:117:space",
+        ]);
+        const children = collectElements(tree, "a")[0].children;
+        for (const space of spaces) {
+          expect(space.properties["data-sd-animate"]).toBeUndefined();
+          const preceding = children[children.indexOf(space) - 1] as Element;
+          expect(styleOf(preceding)).toContain(
+            "--sd-animation:sd-customTransform",
+          );
+          expect(styleOf(space)).toBe(
+            styleOf(preceding).replace("sd-customTransform", "sd-fadeIn"),
+          );
+          expect(space.properties["data-sd-animation-session"]).toBe(
+            preceding.properties["data-sd-animation-session"],
+          );
+        }
+        expect(textOf(tree)).toBe(value);
+        expect(plugin.getLastRenderCharCount()).toBe(value.length);
+        return visible;
+      };
+      timeline.beginPass(now);
+      const first = makeTree();
+      plugin.rehypePlugin()(first);
+      assertTree(first);
+      expect(timeline.mark()).toBe(expectedTokens.length * 40);
+      timeline.commitPass();
+      plugin.commit();
+
+      now = 20;
+      timeline.beginPass(now);
+      const appended = makeTree(text + "next");
+      plugin.rehypePlugin()(appended);
+      const visible = assertTree(appended, text + "next");
+      expect(styleOf(visible[0])).toContain("--sd-delay:-20ms");
+      expect(styleOf(visible[expectedTokens.length])).toContain(
+        `--sd-delay:${expectedTokens.length * 40 - now}ms`,
+      );
+      expect(timeline.mark()).toBe(
+        (expectedTokens.length + (sep === "word" ? 1 : 4)) * 40,
+      );
+      timeline.commitPass();
+      plugin.commit();
+
+      now = 1000;
+      timeline.beginPass(now);
+      const settled = makeTree(text + "next");
+      plugin.rehypePlugin()(settled);
+      assertTree(settled, text + "next");
+      for (const span of collectElements(settled, "span")) {
+        expect(styleOf(span)).toContain("--sd-duration:0ms");
+      }
+      expect(timeline.mark()).toBe(now);
+    },
+  );
 
   it("animates inline code but skips pre, svg, math, and annotation", () => {
     const { tree } = apply("Hello `world` foo");
