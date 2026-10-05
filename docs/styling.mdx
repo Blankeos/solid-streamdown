@@ -59,7 +59,7 @@ The renderers also emit utility classes for typography and layout. If your appli
 @source "../node_modules/solid-streamdown/dist";
 ```
 
-`@source` paths are relative to the stylesheet. Adjust the path for your application structure or a linked package's real location. For Tailwind v3, include `./node_modules/solid-streamdown/dist/**/*.{js,jsx}` in your existing configuration's `content` array. Do not replace your application's own content paths.
+`@source` paths are relative to the stylesheet. Adjust the path for your application structure. For Tailwind v3, include `./node_modules/solid-streamdown/dist/**/*.{js,jsx}` in your existing configuration's `content` array. Do not replace your application's own content paths.
 
 Upstream-style utility classes such as `text-muted-foreground`, `bg-sidebar` and `border-border` need corresponding application theme colors if you want Tailwind to generate them. Those optional Tailwind tokens are distinct from the native `--sd-*` variables. Existing design-system themes can supply them; no Tailwind setup is mandatory for the native stylesheet.
 

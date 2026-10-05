@@ -4,9 +4,9 @@
     "name": "Solid Streamdown",
     "description": "Native SolidJS port targeting React Streamdown 2.7.0.",
     "repo": {
-      "owner": "Blankeos",
+      "owner": "vherbruck",
       "name": "solid-streamdown",
-      "ref": "feat/streaming-content-animation",
+      "ref": "main",
       "docsPath": "docs",
     },
   },
@@ -152,7 +152,7 @@
   "navFooter": [
     {
       "label": "GitHub",
-      "path": "https://github.com/Blankeos/solid-streamdown",
+      "path": "https://github.com/vherbruck/solid-streamdown",
     },
   ],
   "ui": {
@@ -160,8 +160,8 @@
     "pageNavigation": true,
   },
   "links": {
-    "github": "https://github.com/Blankeos/solid-streamdown",
-    "issues": "https://github.com/Blankeos/solid-streamdown/issues",
+    "github": "https://github.com/vherbruck/solid-streamdown",
+    "issues": "https://github.com/vherbruck/solid-streamdown/issues",
   },
   "llms": {
     "enabled": true,

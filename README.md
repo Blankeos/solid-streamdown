@@ -6,7 +6,7 @@ A SolidJS port of Streamdown, designed for AI-powered streaming.
 
 Formatting Markdown is easy, but when you tokenize and stream it, new challenges arise. Solid Streamdown is built specifically to handle the unique requirements of streaming Markdown content from AI models, providing seamless formatting even with incomplete or unterminated Markdown blocks.
 
-This fork aims to be a 1:1 native Solid port of Vercel's [Streamdown 2.7.0](https://github.com/vercel/streamdown), based on the original [Solid Streamdown](https://github.com/vherbruck/solid-streamdown).
+Solid Streamdown aims to be a 1:1 native Solid port of Vercel's [Streamdown 2.7.0](https://github.com/vercel/streamdown), based on the original [Solid Streamdown](https://github.com/vherbruck/solid-streamdown).
 
 ## Features
 
@@ -22,21 +22,17 @@ This fork aims to be a 1:1 native Solid port of Vercel's [Streamdown 2.7.0](http
 
 ## Installation
 
-Build and link the fork into your Solid application:
+Install Solid Streamdown with your preferred package manager:
 
 ```bash
-# In the fork checkout:
-git clone --branch feat/streaming-content-animation https://github.com/Blankeos/solid-streamdown.git
-cd solid-streamdown
-bun install
-bun run build
-bun link
-
-# Then, from your Solid application's directory:
-bun link solid-streamdown
+npm install solid-streamdown
+# or
+pnpm add solid-streamdown
+# or
+bun add solid-streamdown
 ```
 
-> This fork is not published on npm; the registry package is the original Solid repository's release, not this fork. Your application needs the `solid-js` peer dependency (`^1.8.0`). See [getting started](docs/getting-started.mdx) for more installation options.
+Your application needs the `solid-js` peer dependency (`^1.8.0`). See [getting started](docs/getting-started.mdx) for setup instructions.
 
 Import the stylesheet in your application. If you use the math plugin, also import the KaTeX stylesheet:
 
