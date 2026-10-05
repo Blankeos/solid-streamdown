@@ -9,6 +9,23 @@ React baseline: `vercel/streamdown`, package `streamdown@2.7.0`, reference commi
 
 Load `.agents/skills/solid-streamdown-maintain/SKILL.md` before maintenance. Keep native Solid component types, legacy defaults and conditional exports intact. Retain MIT and Apache-2.0 notices and update attribution when incorporating upstream code. Write original docs rather than copying upstream prose wholesale.
 
+## Branch workflow
+
+`feat/streaming-content-animation` is the source of truth for implementation, tests and documentation. Send shared changes there first.
+
+The maintained fork's `main` branch stays exactly one commit ahead: `chore: publish as @blankeos/solid-streamdown`. That commit contains only the scoped package metadata, matching documentation and consumer import paths, fork links, and the note that the goal is an upstream merge. Do not develop features or unrelated fixes on `main`.
+
+After updating the PR branch, replay the publishing commit onto it:
+
+```bash
+git switch main
+git rebase feat/streaming-content-animation
+# After resolving any package-name/documentation conflicts and validating:
+git push --force-with-lease fork main
+```
+
+Keep all source changes on the PR branch and verify that `git rev-list --count feat/streaming-content-animation..main` is `1`. Publishing the package remains a separate, explicit release step.
+
 ## Library verification
 
 ```bash
