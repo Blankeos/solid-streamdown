@@ -8,12 +8,14 @@ export default defineConfig(({ isSsrBuild }) => ({
       ? []
       : [
           {
-            find: /^solid-streamdown$/,
+            find: /^@blankeos\/solid-streamdown$/,
             replacement: resolve("dist/index/index.js"),
           },
         ],
   },
-  ssr: { external: ["solid-streamdown", "solid-streamdown/code"] },
+  ssr: {
+    external: ["@blankeos/solid-streamdown", "@blankeos/solid-streamdown/code"],
+  },
   build: {
     outDir: isSsrBuild
       ? "/tmp/solid-streamdown-hydration-ssr"

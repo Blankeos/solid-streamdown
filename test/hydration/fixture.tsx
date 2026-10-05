@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
-import { CodeBlock, CodeBlockCopyButton, Streamdown } from "solid-streamdown";
-import { code } from "solid-streamdown/code";
+import { CodeBlock, CodeBlockCopyButton, Streamdown } from "@blankeos/solid-streamdown";
+import { code } from "@blankeos/solid-streamdown/code";
 export function Fixture() {
   const [active, setActive] = createSignal(true);
   return (

@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "solid-streamdown",
+      "name": "@blankeos/solid-streamdown",
       "dependencies": {
         "clsx": "^2.1.1",
         "comma-separated-tokens": "^2.0.3",

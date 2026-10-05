@@ -8,6 +8,12 @@ Formatting Markdown is easy, but when you tokenize and stream it, new challenges
 
 Solid Streamdown aims to be a 1:1 native Solid port of Vercel's [Streamdown 2.7.0](https://github.com/vercel/streamdown), based on the original [Solid Streamdown](https://github.com/vherbruck/solid-streamdown).
 
+## Fork status
+
+`@blankeos/solid-streamdown` is an independently maintained fork of [solid-streamdown](https://github.com/vherbruck/solid-streamdown). My goal is to get these native Streamdown 2.7.0 features and fixes merged upstream. The upstream contribution is tracked in [PR #5](https://github.com/vherbruck/solid-streamdown/pull/5); this scoped package lets Solid applications use the work in the meantime.
+
+The `main` branch contains the scoped package. The `feat/streaming-content-animation` branch keeps the upstream `solid-streamdown` package identity for the PR.
+
 ## Features
 
 - 🚀 **1:1 Solid port** of Streamdown 2.7.0 is the goal
@@ -25,11 +31,11 @@ Solid Streamdown aims to be a 1:1 native Solid port of Vercel's [Streamdown 2.7.
 Install Solid Streamdown with your preferred package manager:
 
 ```bash
-npm install solid-streamdown
+npm install @blankeos/solid-streamdown
 # or
-pnpm add solid-streamdown
+pnpm add @blankeos/solid-streamdown
 # or
-bun add solid-streamdown
+bun add @blankeos/solid-streamdown
 ```
 
 Your application needs the `solid-js` peer dependency (`^1.8.0`). See [getting started](docs/getting-started.mdx) for setup instructions.
@@ -38,16 +44,16 @@ Import the stylesheet in your application. If you use the math plugin, also impo
 
 ```tsx
 import "katex/dist/katex.min.css";
-import "solid-streamdown/styles.css";
+import "@blankeos/solid-streamdown/styles.css";
 ```
 
 If you use Tailwind, update your Tailwind `globals.css` to include the following so that Tailwind can detect the utility classes used by Solid Streamdown.
 
 ```css
-@source "../node_modules/solid-streamdown/dist";
+@source "../node_modules/@blankeos/solid-streamdown/dist";
 ```
 
-The path must be relative from your CSS file to the `node_modules` folder containing `solid-streamdown`. The `dist` directory includes the native plugins, so no separate plugin `@source` entries are needed. Tailwind is optional.
+The path must be relative from your CSS file to the `node_modules` folder containing `@blankeos/solid-streamdown`. The `dist` directory includes the native plugins, so no separate plugin `@source` entries are needed. Tailwind is optional.
 
 ### Monorepo setup
 
@@ -55,7 +61,7 @@ In a monorepo (npm workspaces, Turbo, pnpm, etc.), dependencies are typically ho
 
 ```text
 monorepo/
-├── node_modules/solid-streamdown/  ← hoisted here
+├── node_modules/@blankeos/solid-streamdown/  ← hoisted here
 ├── apps/
 │   └── web/
 │       └── src/
@@ -64,7 +70,7 @@ monorepo/
 
 ```css
 /* apps/web/src/globals.css → 3 levels up to reach root node_modules */
-@source "../../../node_modules/solid-streamdown/dist";
+@source "../../../node_modules/@blankeos/solid-streamdown/dist";
 ```
 
 Adjust the number of `../` segments based on where your CSS file lives relative to the root `node_modules`.
@@ -108,13 +114,13 @@ This example requires an AI SDK chat endpoint at `/api/chat`; call `sendMessage`
 ```tsx
 import { For, Index, Show } from "solid-js";
 import { useChat } from "ai-sdk-solid";
-import { Streamdown } from "solid-streamdown";
-import { code } from "solid-streamdown/code";
-import { mermaid } from "solid-streamdown/mermaid";
-import { math } from "solid-streamdown/math";
-import { cjk } from "solid-streamdown/cjk";
+import { Streamdown } from "@blankeos/solid-streamdown";
+import { code } from "@blankeos/solid-streamdown/code";
+import { mermaid } from "@blankeos/solid-streamdown/mermaid";
+import { math } from "@blankeos/solid-streamdown/math";
+import { cjk } from "@blankeos/solid-streamdown/cjk";
 import "katex/dist/katex.min.css";
-import "solid-streamdown/styles.css";
+import "@blankeos/solid-streamdown/styles.css";
 
 export default function Chat() {
   const { messages, status } = useChat();
@@ -170,7 +176,7 @@ defaults (e.g. `h1`, `p`, `code`), pass them in `components`.
 ```tsx
 import { splitProps, type Component, type JSX } from "solid-js";
 import { Dynamic } from "solid-js/web";
-import { Streamdown, type ExtraProps } from "solid-streamdown";
+import { Streamdown, type ExtraProps } from "@blankeos/solid-streamdown";
 
 const Fallback: Component<Record<string, unknown> & ExtraProps> = (props) => {
   const [local, rest] = splitProps(props, ["node", "children"]);

@@ -3,11 +3,11 @@ import {
   CodeBlockCopyButton,
   CodeBlockDownloadButton,
   type PluginConfig,
-} from "solid-streamdown";
-import { code, createCodePlugin } from "solid-streamdown/code";
-import { math, createMathPlugin } from "solid-streamdown/math";
-import { cjk } from "solid-streamdown/cjk";
-import { mermaid } from "solid-streamdown/mermaid";
+} from "@blankeos/solid-streamdown";
+import { code, createCodePlugin } from "@blankeos/solid-streamdown/code";
+import { math, createMathPlugin } from "@blankeos/solid-streamdown/math";
+import { cjk } from "@blankeos/solid-streamdown/cjk";
+import { mermaid } from "@blankeos/solid-streamdown/mermaid";
 import { code as upstreamCode } from "@streamdown/code";
 import { math as upstreamMath } from "@streamdown/math";
 import { cjk as upstreamCjk } from "@streamdown/cjk";

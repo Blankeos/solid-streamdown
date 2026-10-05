@@ -4,7 +4,10 @@ description: Preserve StreamMarkdown and createMarkdownStream behavior.
 ---
 
 ```tsx
-import { StreamMarkdown, createMarkdownStream } from "solid-streamdown";
+import {
+  StreamMarkdown,
+  createMarkdownStream,
+} from "@blankeos/solid-streamdown";
 const stream = createMarkdownStream();
 // In your transport: stream.write(chunk); on completion: stream.end();
 <StreamMarkdown stream={stream} animated />;

@@ -1,6 +1,6 @@
 # Native Solid Streamdown implementation scope
 
-The maintained fork implements the functional surface of React Streamdown **2.7.0** (reference `08da224`) with native Solid components and reactivity. It is not a React wrapper. The upstream package is `solid-streamdown`.
+The maintained fork implements the functional surface of React Streamdown **2.7.0** (reference `08da224`) with native Solid components and reactivity. It is not a React wrapper. The independently maintained package is `@blankeos/solid-streamdown`; the goal is to merge the implementation into upstream `solid-streamdown`.
 
 Implemented areas include reactive Markdown children and active-stream state, streaming/static modes, remend repair, block splitting/memoized rendering and direction, default raw HTML sanitation/hardening, custom tags/literal content/fallback components, element and URL policies, default-enabled link confirmation, portal overlays, native providers and custom fenced renderers, code/table/image/Mermaid controls, composable exports, translations/icons and opt-in reveal/carets. Legacy stream APIs retain their separate defaults.
 

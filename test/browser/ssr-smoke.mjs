@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { renderToString } from "solid-js/web";
-import { Streamdown } from "solid-streamdown";
-import { code } from "solid-streamdown/code";
-import { math } from "solid-streamdown/math";
-import { cjk } from "solid-streamdown/cjk";
-import { mermaid } from "solid-streamdown/mermaid";
+import { Streamdown } from "@blankeos/solid-streamdown";
+import { code } from "@blankeos/solid-streamdown/code";
+import { math } from "@blankeos/solid-streamdown/math";
+import { cjk } from "@blankeos/solid-streamdown/cjk";
+import { mermaid } from "@blankeos/solid-streamdown/mermaid";
 const html = renderToString(() =>
   Streamdown({
     children:

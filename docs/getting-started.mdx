@@ -11,21 +11,21 @@ Install the package and its Solid peer dependency in your application:
   <Tab value="npm">
 
 ```bash
-npm install solid-streamdown solid-js
+npm install @blankeos/solid-streamdown solid-js
 ```
 
   </Tab>
   <Tab value="pnpm">
 
 ```bash
-pnpm add solid-streamdown solid-js
+pnpm add @blankeos/solid-streamdown solid-js
 ```
 
   </Tab>
   <Tab value="bun">
 
 ```bash
-bun add solid-streamdown solid-js
+bun add @blankeos/solid-streamdown solid-js
 ```
 
   </Tab>
@@ -37,8 +37,8 @@ Solid Streamdown requires `solid-js` version `^1.8.0`. Native plugins are includ
 
 ```tsx
 import { createSignal } from "solid-js";
-import { Streamdown } from "solid-streamdown";
-import "solid-streamdown/styles.css";
+import { Streamdown } from "@blankeos/solid-streamdown";
+import "@blankeos/solid-streamdown/styles.css";
 
 export function MarkdownView() {
   const [markdown, setMarkdown] = createSignal("# Hello");

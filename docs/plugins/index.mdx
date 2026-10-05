@@ -4,12 +4,12 @@ description: Native providers in same-package subpaths.
 ---
 
 ```tsx
-import { Streamdown } from "solid-streamdown";
-import { code } from "solid-streamdown/code";
-import { math } from "solid-streamdown/math";
-import { cjk } from "solid-streamdown/cjk";
-import { mermaid } from "solid-streamdown/mermaid";
-import "solid-streamdown/styles.css";
+import { Streamdown } from "@blankeos/solid-streamdown";
+import { code } from "@blankeos/solid-streamdown/code";
+import { math } from "@blankeos/solid-streamdown/math";
+import { cjk } from "@blankeos/solid-streamdown/cjk";
+import { mermaid } from "@blankeos/solid-streamdown/mermaid";
+import "@blankeos/solid-streamdown/styles.css";
 import "katex/dist/katex.min.css";
 
 <Streamdown plugins={{ code, math, cjk, mermaid }}>{markdown()}</Streamdown>;

@@ -1,5 +1,5 @@
 import { createSignal, For } from "solid-js";
-import { Streamdown } from "solid-streamdown";
+import { Streamdown } from "@blankeos/solid-streamdown";
 
 export const whitespaceCases = [
   {

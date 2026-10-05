@@ -5,7 +5,7 @@ description: Render fenced languages with Solid components.
 
 ```tsx
 import type { Component } from "solid-js";
-import type { CustomRendererProps } from "solid-streamdown";
+import type { CustomRendererProps } from "@blankeos/solid-streamdown";
 
 const Widget: Component<CustomRendererProps> = (props) => (
   <div data-language={props.language}>{props.code}</div>

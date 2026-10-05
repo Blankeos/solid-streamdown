@@ -1,7 +1,7 @@
 {
-  "name": "solid-streamdown",
+  "name": "@blankeos/solid-streamdown",
   "version": "1.0.1",
-  "description": "Streaming Markdown renderer for SolidJS \u2014 port of Vercel's Streamdown",
+  "description": "Native SolidJS port of Streamdown 2.7.0 — maintained fork intended for upstream merge",
   "type": "module",
   "main": "./dist/index/index.js",
   "module": "./dist/index/index.js",
@@ -120,6 +120,15 @@
   "author": "vherbruck",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vherbruck/solid-streamdown"
-  }
+    "url": "https://github.com/Blankeos/solid-streamdown"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/Blankeos/solid-streamdown/issues"
+  },
+  "contributors": [
+    "Blankeos"
+  ]
 }

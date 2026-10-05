@@ -35,7 +35,7 @@ The root exports the following runtime APIs; feature factories live on their nat
 `useIsCodeFenceIncomplete()` returns a Solid `Accessor<boolean>`, not a React-style boolean snapshot. Read it inside reactive expressions:
 
 ```tsx
-import { useIsCodeFenceIncomplete } from "solid-streamdown";
+import { useIsCodeFenceIncomplete } from "@blankeos/solid-streamdown";
 const FenceStatus = () => {
   const incomplete = useIsCodeFenceIncomplete();
   return <span>{incomplete() ? "Receiving code" : "Code complete"}</span>;

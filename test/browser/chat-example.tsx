@@ -2,13 +2,13 @@ import { onCleanup, For, Index, Show } from "solid-js";
 import { DefaultChatTransport } from "ai";
 import { render } from "solid-js/web";
 import { useChat } from "ai-sdk-solid";
-import { Streamdown } from "solid-streamdown";
-import { code } from "solid-streamdown/code";
-import { mermaid } from "solid-streamdown/mermaid";
-import { math } from "solid-streamdown/math";
-import { cjk } from "solid-streamdown/cjk";
+import { Streamdown } from "@blankeos/solid-streamdown";
+import { code } from "@blankeos/solid-streamdown/code";
+import { mermaid } from "@blankeos/solid-streamdown/mermaid";
+import { math } from "@blankeos/solid-streamdown/math";
+import { cjk } from "@blankeos/solid-streamdown/cjk";
 import "katex/dist/katex.min.css";
-import "solid-streamdown/styles.css";
+import "@blankeos/solid-streamdown/styles.css";
 
 export function mountChatExample() {
   const root = document.createElement("main");
