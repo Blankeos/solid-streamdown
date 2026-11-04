@@ -5,6 +5,9 @@ import {
   mergeProps,
   createEffect,
   createMemo,
+  createComputed,
+  createSignal,
+  untrack,
   type Component,
 } from "solid-js";
 import type { Root } from "hast";
@@ -23,7 +26,7 @@ import {
 } from "./animate-plugin";
 import { FeatureContext } from "./feature-block";
 import { HastRoot } from "./hast-render";
-import { Dynamic } from "solid-js/web";
+import { Dynamic, isServer } from "solid-js/web";
 import { prepareMarkdown } from "./parser";
 import { Block, normalizeHtmlIndentation, type BlockProps } from "./block";
 import { rehypeBlockDirection } from "./block-direction";
@@ -322,8 +325,52 @@ export const Streamdown: Component<StreamdownProps> = (input) => {
     },
     input,
   );
-  const source = createMemo(() => props.children ?? "");
   const active = () => props.mode !== "static" && props.isAnimating;
+  // While streaming, token-rate updates are throttled to one render per frame:
+  // the browser cannot paint more often, and every source change re-parses and
+  // re-schedules the tail block. The first update after an idle frame renders
+  // synchronously; later ones in the same frame coalesce into the next frame.
+  // Otherwise (static, finished, SSR) the source passes through synchronously
+  // so the final content is never deferred.
+  const [source, setSource] = createSignal(untrack(() => props.children ?? ""));
+  let frame: number | undefined;
+  let pendingSource: string | undefined;
+  const cancelFrame = () => {
+    pendingSource = undefined;
+    if (frame === undefined) return;
+    cancelAnimationFrame(frame);
+    frame = undefined;
+  };
+  const onFrame = () => {
+    frame = undefined;
+    if (pendingSource === undefined) return;
+    setSource(pendingSource);
+    pendingSource = undefined;
+    // Keep the window open: the next token in this frame coalesces too.
+    frame = requestAnimationFrame(onFrame);
+  };
+  let initialized = false;
+  createComputed(() => {
+    const value = props.children ?? "";
+    const first = !initialized;
+    initialized = true;
+    if (
+      first ||
+      isServer ||
+      !active() ||
+      typeof requestAnimationFrame !== "function" ||
+      typeof cancelAnimationFrame !== "function"
+    ) {
+      cancelFrame();
+      setSource(value);
+      return;
+    }
+    if (frame === undefined) {
+      setSource(value);
+      frame = requestAnimationFrame(onFrame);
+    } else pendingSource = value;
+  });
+  onCleanup(cancelFrame);
   const prepared = createMemo(() =>
     prepareMarkdown(source(), {
       isStreaming: props.mode !== "static" && props.parseIncompleteMarkdown,

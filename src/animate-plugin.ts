@@ -326,26 +326,44 @@ const splitByWord = (text: string): string[] => {
   return parts;
 };
 
-const splitGraphemes = (text: string): string[] => {
+type GraphemeSegmenter = {
+  segment: (s: string) => Iterable<{ segment: string }>;
+};
+
+/** Constructing an Intl.Segmenter is costly; one instance serves every pass. */
+let graphemeSegmenter: GraphemeSegmenter | null | undefined;
+
+const getGraphemeSegmenter = (): GraphemeSegmenter | null => {
+  if (graphemeSegmenter !== undefined) return graphemeSegmenter;
+  graphemeSegmenter = null;
   const Segmenter =
     (globalThis as unknown as Record<string, unknown>).Intl &&
     (Intl as unknown as Record<string, unknown>).Segmenter
       ? (
           Intl as unknown as {
-            Segmenter: new (...args: never[]) => {
-              segment: (s: string) => Iterable<{ segment: string }>;
-            };
+            Segmenter: new (
+              locale?: string,
+              opts?: object,
+            ) => GraphemeSegmenter;
           }
         ).Segmenter
       : undefined;
   if (Segmenter) {
     try {
-      const segmenter = new (
-        Segmenter as new (
-          locale?: string,
-          opts?: object,
-        ) => { segment: (s: string) => Iterable<{ segment: string }> }
-      )(undefined, { granularity: "grapheme" });
+      graphemeSegmenter = new Segmenter(undefined, {
+        granularity: "grapheme",
+      });
+    } catch {
+      // Fall through to code-point splitting.
+    }
+  }
+  return graphemeSegmenter;
+};
+
+const splitGraphemes = (text: string): string[] => {
+  const segmenter = getGraphemeSegmenter();
+  if (segmenter) {
+    try {
       return Array.from(segmenter.segment(text), (part) => part.segment);
     } catch {
       // Fall through to code-point splitting.
@@ -465,6 +483,16 @@ export function createAnimatePlugin(
       node.position
         ? `source:${(node.position.start.offset ?? 0) + local}`
         : `rendered:${offset}`;
+    // Both passes split the same text nodes; split each distinct string once.
+    const splitCache = new Map<string, string[]>();
+    const split = (value: string): string[] => {
+      let parts = splitCache.get(value);
+      if (!parts) {
+        parts = config.sep === "char" ? splitByChar(value) : splitByWord(value);
+        splitCache.set(value, parts);
+      }
+      return parts;
+    };
     let renderedOffset = 0;
     let newCount = 0;
     for (const { node, ancestors } of entries) {
@@ -475,10 +503,7 @@ export function createAnimatePlugin(
         renderedOffset++;
         continue;
       }
-      const parts =
-        config.sep === "char"
-          ? splitByChar(node.value)
-          : splitByWord(node.value);
+      const parts = split(node.value);
       let local = 0;
       for (const part of parts) {
         if (
@@ -513,6 +538,10 @@ export function createAnimatePlugin(
     };
 
     const counter = { count: 0 };
+    const replacements = new Map<
+      ParentWithChildren,
+      { members: Set<Node>; byNode: Map<Node, Array<Element | Text>> }
+    >();
 
     for (const { node, ancestors } of entries) {
       if (node.type !== "text") {
@@ -545,11 +574,15 @@ export function createAnimatePlugin(
         counter.count += text.length;
         continue;
       }
-      const parts =
-        config.sep === "char" ? splitByChar(text) : splitByWord(text);
-      const siblings = parent.children as Array<Element | Text | Node>;
-      const index = siblings.indexOf(textNode as unknown as Element & Text);
-      if (index === -1) {
+      const parts = split(text);
+      let pending = replacements.get(parent);
+      if (!pending) {
+        // Sets make the membership check O(1); the old indexOf + splice was
+        // O(children) per text node, quadratic for long animated paragraphs.
+        pending = { members: new Set(parent.children), byNode: new Map() };
+        replacements.set(parent, pending);
+      }
+      if (!pending.members.has(textNode)) {
         counter.count += text.length;
         continue;
       }
@@ -604,7 +637,20 @@ export function createAnimatePlugin(
           return spans;
         },
       );
-      siblings.splice(index, 1, ...(replacement as unknown as Array<Node>));
+      pending.byNode.set(textNode, replacement);
+    }
+
+    // Splice every text node's spans in one rebuild per parent.
+    for (const [parent, { byNode }] of replacements) {
+      if (!byNode.size) continue;
+      const children: Node[] = [];
+      for (const child of parent.children) {
+        const replacement = byNode.get(child);
+        if (replacement) {
+          for (const item of replacement) children.push(item);
+        } else children.push(child);
+      }
+      parent.children = children;
     }
 
     state.lastRenderCharCount = counter.count;

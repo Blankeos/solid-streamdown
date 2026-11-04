@@ -9,6 +9,7 @@ import type { Root } from "hast";
 import { visit } from "unist-util-visit";
 import { parseMarkdownTree, type ParseOptions } from "./parser";
 import { HastRoot } from "./hast-render";
+import { shareHast } from "./share-hast";
 import { BlockIncompleteContext } from "./block-incomplete-context";
 import type { AnimatePlugin } from "./animate-plugin";
 import type { StreamdownProps } from "./types";
@@ -97,11 +98,21 @@ export const Block: Component<BlockProps> = (props) => {
     shiftPositions(parsed, offset());
     return parsed;
   });
-  const tree = createMemo(() => {
-    const parsed = copyHast(baseTree());
-    props.animatePlugin?.rehypePlugin()(parsed);
-    return parsed;
-  });
+  // Share unchanged subtrees with the previous render: renderers key slots by
+  // index and compare by reference, so per-token work tracks what changed
+  // instead of re-rendering every character host of a growing block.
+  let previousTree: Root | undefined;
+  const tree = createMemo(
+    () => {
+      const parsed = copyHast(baseTree());
+      props.animatePlugin?.rehypePlugin()(parsed);
+      previousTree = shareHast(previousTree, parsed);
+      return previousTree;
+      // Always notify so the commit effect below runs once per plugin pass.
+    },
+    undefined,
+    { equals: false },
+  );
   createEffect(() => {
     tree();
     props.animatePlugin?.commit();

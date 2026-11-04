@@ -145,7 +145,8 @@ const HastHost: Component<HastElementProps> = (props) => {
     (/^[a-z][a-z0-9-]*$/.test(tagName())
       ? (props.fallbackComponent ?? context.fallbackComponent ?? tagName())
       : tagName());
-  const solidProps = (): Record<string, unknown> => {
+  // Memoized: the spread below reads every key through this accessor.
+  const solidProps = createMemo((): Record<string, unknown> => {
     const element = props.element();
     const custom = typeof component() === "function";
     const base = toSolidProps(
@@ -159,7 +160,7 @@ const HastHost: Component<HastElementProps> = (props) => {
       ...(custom ? { node: element } : {}),
       ...(tagName() === "code" && inFence() ? { "data-block": "true" } : {}),
     };
-  };
+  });
   const children = (): HastChild[] => {
     const nodes = props.element().children as HastChild[];
     if (tagName() !== "li" || override()) return nodes;
