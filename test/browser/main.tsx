@@ -18,6 +18,14 @@ import { Whitespace } from "./whitespace";
 
 const initial =
   "**中文。**测试\n\n$$\nx^2\n$$\n\n```js\nconst answer = 42;\n```\n\n```mermaid\ngraph TD\n A[Alpha] --> B[Beta]\n```";
+const tableOnly =
+  "Intro paragraph before the table.\n\n" +
+  "| Feature | Status | Notes |\n| --- | --- | --- |\n" +
+  Array.from(
+    { length: 12 },
+    (_, i) => `| Feature number ${i} | shipped | note for row ${i} |`,
+  ).join("\n") +
+  "\n\nClosing paragraph after the table.\n";
 const report =
   "Report **paid *on `2026-10-04`***: $1,234.56.\n\n" +
   "| Date | Amount | Status |\n| :--- | ---: | :---: |\n" +
@@ -36,8 +44,13 @@ function Reveal() {
     setAnimating(true);
     setText("Report ");
     setAppending(true);
-    const long = new URLSearchParams(location.search).has("long");
-    const transcript = long ? longGuide : report;
+    const params = new URLSearchParams(location.search);
+    const long = params.has("long") || params.has("table");
+    const transcript = params.has("table")
+      ? tableOnly
+      : long
+        ? longGuide
+        : report;
     let end = long ? 0 : 7;
     if (long) setText("");
     let tick = 0;
