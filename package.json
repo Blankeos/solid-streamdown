@@ -54,12 +54,16 @@
     "test:ssr": "node test/browser/ssr-smoke.mjs",
     "test:hydration": "playwright test --config test/browser/hydration.config.ts",
     "docs:dev": "bunx gittydocs@0.0.7 dev ./docs",
-    "docs:build": "bunx gittydocs@0.0.7 build ./docs --out ./.docs-dist"
+    "docs:build": "bunx gittydocs@0.0.7 build ./docs --out ./.docs-dist",
+    "changeset": "changeset",
+    "publish-ci": "bun run typecheck && bun run test:run && bun run build && changeset publish"
   },
   "peerDependencies": {
     "solid-js": "^1.8.0"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
     "@playwright/test": "^1.63.0",
     "@streamdown/cjk": "1.0.3",
     "@streamdown/code": "2.0.0",
