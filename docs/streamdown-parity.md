@@ -22,15 +22,15 @@ once on mount (no hydration flag re-render in Solid).
 
 Verified against the completed full-port checkout:
 
-| Verification                                              | Result                                                                                                                                                                 |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bun run test:run`                                        | 217 tests passed across 17 files (plus 1 opt-in benchmark skipped)                                                                                                     |
-| `bun run typecheck`, `bun run check:fix`, `bun run build` | Passed                                                                                                                                                                 |
-| `bun run test:types`                                      | Built-package consumer types passed                                                                                                                                    |
-| `bun run test:browser`                                    | 30 of 31 Chromium tests passed; `long-reveal.spec.ts` fails identically on the pre-2.7.1 baseline `adcbbe1` when the machine is unloaded (timing-sensitive, see below) |
-| `bun run test:hydration`                                  | 1 separate Chromium hydration test passed                                                                                                                              |
-| `bun run test:ssr`                                        | Node SSR without browser globals passed                                                                                                                                |
-| Gittydocs 0.0.7 build                                     | 30 static routes, 30 Markdown exports and `/llms.txt`                                                                                                                  |
+| Verification                                              | Result                                                                                                                                                |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run test:run`                                        | 217 tests passed across 17 files (plus 1 opt-in benchmark skipped)                                                                                    |
+| `bun run typecheck`, `bun run check:fix`, `bun run build` | Passed                                                                                                                                                |
+| `bun run test:types`                                      | Built-package consumer types passed                                                                                                                   |
+| `bun run test:browser`                                    | 31 of 31 Chromium tests passed (`long-reveal.spec.ts` now ages characters by rendered frames, not wall-clock time, so it no longer flakes under load) |
+| `bun run test:hydration`                                  | 1 separate Chromium hydration test passed                                                                                                             |
+| `bun run test:ssr`                                        | Node SSR without browser globals passed                                                                                                               |
+| Gittydocs 0.0.7 build                                     | 30 static routes, 30 Markdown exports and `/llms.txt`                                                                                                 |
 
 The published Gittydocs 0.0.7 docs-only rebuild produced 30 static routes, 30
 Markdown exports and `/llms.txt`. Configuration exports retain all 41
