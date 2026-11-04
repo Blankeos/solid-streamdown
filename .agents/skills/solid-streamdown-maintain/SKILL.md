@@ -1,6 +1,6 @@
 ---
 name: solid-streamdown-maintain
-description: Maintain the native Solid Streamdown fork against React Streamdown 2.7.0; load for API, security, plugins, rendering, docs or upstream updates.
+description: Maintain the native Solid Streamdown fork against React Streamdown 2.7.1; load for API, security, plugins, rendering, docs or upstream updates.
 ---
 
 # Maintain Solid Streamdown
@@ -10,7 +10,7 @@ description: Maintain the native Solid Streamdown fork against React Streamdown 
 - Maintained fork: https://github.com/Blankeos/solid-streamdown
 - Current local checkout: `/Users/carlo/.herdr/experiments/solid-streamdown` (outside the usual solid-kun sibling projects).
 - Original Solid upstream: https://github.com/vherbruck/solid-streamdown
-- React reference: https://github.com/vercel/streamdown, **streamdown 2.7.0**, reference commit `08da224`.
+- React reference: https://github.com/vercel/streamdown, **streamdown 2.7.1**, reference commit `4e8cf96`.
 - Source contracts: `packages/streamdown`, upstream plugin packages, and `apps/website/content/docs` at the pinned revision. Live https://streamdown.ai/docs/getting-started may advance.
 - The upstream PR branch uses `solid-streamdown`; the independently published fork uses `@blankeos/solid-streamdown` on `main`. Keep package metadata, docs imports and consumer fixtures aligned with the active branch. Document standard registry installation; do not claim a release was actually published without verifying it.
 
@@ -18,11 +18,11 @@ Read root `CLAUDE.md`, `docs/streamdown-parity.md`, `docs/legacy.mdx`, and the s
 
 ## Contract
 
-Aim for 1:1 native Solid API/behavior compatibility with the exact target, not a React wrapper. Solid `Component`/`JSX`, reactive props, refs and portal ownership necessarily differ. Remaining gaps are implementation work, not permanent Solid limitations. The full functional surface is implemented with mapped fixtures; do not declare exhaustive performance/security parity based only on export names or passing counts. Verified baseline: 196 unit tests across 16 files, 31 Chromium tests across 11 files, 1 separate hydration test, built-package consumer types and Node SSR. Record fresh results after every update; historical counts are not current evidence.
+Aim for 1:1 native Solid API/behavior compatibility with the exact target, not a React wrapper. Solid `Component`/`JSX`, reactive props, refs and portal ownership necessarily differ. Remaining gaps are implementation work, not permanent Solid limitations. The full functional surface is implemented with mapped fixtures; do not declare exhaustive performance/security parity based only on export names or passing counts. Verified baseline (2.7.1): 217 unit tests across 17 files (+1 opt-in bench skipped), 30/31 Chromium tests (`long-reveal.spec.ts` is timing-sensitive and fails on an unloaded machine, also on the pre-2.7.1 baseline), 1 separate hydration test, built-package consumer types and Node SSR. Record fresh results after every update; historical counts are not current evidence.
 
 Preserve legacy content/stream precedence, repair-while-active defaults, caret default, stream accessors and URL callback shape. Keep direct Streamdown defaults distinct. Native provider imports on `main` are `@blankeos/solid-streamdown/{code,math,cjk,mermaid}` (unscoped on the upstream PR branch); component-valued contracts must be Solid. Do not add React runtime peers to compensate for an unfinished port.
 
-Native whitespace deliberately deviates from pinned React 2.7.0's glued whitespace DOM for correctness, not because Solid cannot match it. Keep trailing whitespace out of visible `data-sd-animate` spans: render it in inline `data-sd-animate-space` hosts sharing the preceding glyph's delay, duration and easing without new timeline slots. Preserve custom transform glyph hosts, inherit the parent's `white-space` semantics on both hosts, and retain timed opacity on spaces so ancestor link underlines cannot paint before reveal. Do not restore glued/pre-wrap whitespace to transform boxes just to match upstream DOM.
+Native whitespace deliberately deviates from pinned React 2.7.1's glued whitespace DOM for correctness, not because Solid cannot match it. Keep trailing whitespace out of visible `data-sd-animate` spans: render it in inline `data-sd-animate-space` hosts sharing the preceding glyph's delay, duration and easing without new timeline slots. Preserve custom transform glyph hosts, inherit the parent's `white-space` semantics on both hosts, and retain timed opacity on spaces so ancestor link underlines cannot paint before reveal. Do not restore glued/pre-wrap whitespace to transform boxes just to match upstream DOM.
 
 Consumer-imposed inline-block char hosts can interrupt kerning and permit midword wrapping; this is not a universal shaping/layout fix. Inline fade controls verify native shaping within the existing geometry tolerance. Plain-text append retains real `Animation` objects in the whitespace fixture; link-content rewrites may still remount hosts and are outside that retention evidence.
 

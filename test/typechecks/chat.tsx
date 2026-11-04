@@ -42,3 +42,10 @@ export default function Chat() {
     </div>
   );
 }
+
+// 2.7.1: highlight types are exported from the package entry.
+import type {
+  HighlightResult,
+  HighlightToken,
+} from "@blankeos/solid-streamdown";
+export type HighlightTypesAvailable = [HighlightResult, HighlightToken];

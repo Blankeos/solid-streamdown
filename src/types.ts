@@ -1,7 +1,7 @@
 /*
  * Copyright Vercel, Inc.
  * Licensed under the Apache License, Version 2.0 (see LICENSE-STREAMDOWN).
- * Native public contracts adapted from Streamdown 2.7.0; component types use Solid.
+ * Native public contracts adapted from Streamdown 2.7.1; component types use Solid.
  */
 import type { Element, Parents } from "hast";
 import type {
@@ -140,6 +140,14 @@ export interface StreamMarkdownProps {
 }
 
 /** Streamdown 2.7 core interface, with native Solid component overrides. */
+/** `data-*` and `aria-*` attributes are set on the root element. */
+export type StreamdownRootAttributes = {
+  [dataAttribute: `data-${string}`]:
+    string | number | bigint | boolean | null | undefined;
+  [ariaAttribute: `aria-${string}`]:
+    string | number | boolean | null | undefined;
+};
+
 export interface StreamdownProps extends Omit<
   StreamMarkdownProps,
   "content" | "stream" | "showCaret" | "urlTransform"

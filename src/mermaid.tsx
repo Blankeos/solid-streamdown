@@ -350,6 +350,7 @@ export function BoundSvg(p: {
   svg: string;
   bindFunctions?: (el: Element) => void;
 }) {
+  const t = useTranslation();
   const [node, setNode] = createSignal<HTMLDivElement>();
   createEffect(() => {
     const el = node(),
@@ -363,6 +364,7 @@ export function BoundSvg(p: {
   return (
     <div
       ref={setNode}
+      aria-label={t("mermaidAriaLabel")}
       class="sd-mermaid-svg"
       innerHTML={normalizeMermaidInlineSvg(sanitizeMermaid(p.svg))}
     />

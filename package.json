@@ -1,7 +1,7 @@
 {
   "name": "@blankeos/solid-streamdown",
   "version": "1.0.1",
-  "description": "Native SolidJS port of Streamdown 2.7.0 — maintained fork intended for upstream merge",
+  "description": "Native SolidJS port of Streamdown 2.7.1 — maintained fork intended for upstream merge",
   "type": "module",
   "main": "./dist/index/index.js",
   "module": "./dist/index/index.js",

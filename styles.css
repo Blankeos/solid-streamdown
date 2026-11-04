@@ -364,7 +364,7 @@
   cursor: not-allowed;
 }
 
-/* Ported Streamdown 2.7.0 visual contracts (Apache-2.0; LICENSE-STREAMDOWN).
+/* Ported Streamdown 2.7.1 visual contracts (Apache-2.0; LICENSE-STREAMDOWN).
  * sd-* selectors make the defaults usable without a Tailwind build. */
 .streamdown {
   white-space: normal;

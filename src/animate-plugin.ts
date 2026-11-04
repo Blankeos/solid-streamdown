@@ -180,6 +180,11 @@ interface AnimateRenderState {
 }
 
 const WHITESPACE_RE = /\s/;
+// Scripts written without spaces between words, plus CJK / fullwidth
+// punctuation. Each such character is its own animate unit in word mode so
+// a CJK paragraph isn't one giant "word" (#669).
+const CJK_RE =
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\u3000-\u303F\uFF00-\uFFEF]/u;
 const WHITESPACE_ONLY_RE = /^\s+$/;
 
 /** Subtrees whose layout must not be disturbed by word spans. Inline `code` animates. */
@@ -303,10 +308,18 @@ const splitByWord = (text: string): string[] => {
   const parts: string[] = [];
   let current = "";
   let inWhitespace = false;
+  let previousCjk = false;
 
   for (const char of text) {
     const isWhitespace = WHITESPACE_RE.test(char);
-    if (isWhitespace !== inWhitespace && current) {
+    const isCjk = !isWhitespace && CJK_RE.test(char);
+    // CJK has no inter-word spaces, so every CJK character starts a new unit
+    // (and so does the first non-CJK character after one).
+    if (!isWhitespace && current !== "" && (isCjk || previousCjk)) {
+      parts.push(current);
+      current = "";
+      inWhitespace = false;
+    } else if (isWhitespace !== inWhitespace && current) {
       if (isWhitespace) {
         current += char;
         inWhitespace = true;
@@ -317,6 +330,7 @@ const splitByWord = (text: string): string[] => {
     }
     current += char;
     inWhitespace = isWhitespace;
+    previousCjk = isCjk;
   }
 
   if (current) {

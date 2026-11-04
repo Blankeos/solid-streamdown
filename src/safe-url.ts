@@ -1,7 +1,7 @@
 /*
  * Copyright Vercel, Inc.
  * Licensed under the Apache License, Version 2.0 (see LICENSE-STREAMDOWN).
- * Native passthrough URL contract adapted from Streamdown 2.7.0.
+ * Native passthrough URL contract adapted from Streamdown 2.7.1.
  * Legacy safe-URL helpers below are independently implemented.
  */
 import type { StreamdownUrlTransform } from "./types";

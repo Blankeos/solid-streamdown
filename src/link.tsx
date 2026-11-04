@@ -1,5 +1,5 @@
 /**
- * Adapted from Vercel Streamdown 2.7.0.
+ * Adapted from Vercel Streamdown 2.7.1.
  * Copyright 2023 Vercel, Inc.
  * Licensed under Apache-2.0; see LICENSE-STREAMDOWN and ATTRIBUTION.md.
  */

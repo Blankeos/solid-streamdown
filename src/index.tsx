@@ -53,6 +53,7 @@ export type {
   StreamdownMode,
   StreamMarkdownProps,
   StreamdownProps,
+  StreamdownRootAttributes,
   Components,
   ExtraProps,
   AllowElement,

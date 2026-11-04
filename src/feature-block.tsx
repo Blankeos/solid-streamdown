@@ -25,6 +25,7 @@ import { control, useCn, type HostProps } from "./ui-utils";
 let mermaidRenderId = 0;
 
 import { FeatureContext } from "./streamdown-context";
+import { defaultTranslations } from "./controls";
 export { FeatureContext } from "./streamdown-context";
 
 export function fencedCode(
@@ -180,7 +181,12 @@ export function FeatureBlock(props: {
           }
         } catch (cause) {
           if (!disposed && request.revision === revision)
-            setError(cause instanceof Error ? cause.message : String(cause));
+            setError(
+              cause instanceof Error
+                ? cause.message
+                : (context.translations?.errorMermaid ??
+                    defaultTranslations.errorMermaid),
+            );
         }
         // Yield the layout's elapsed time while streaming, but final fence closure
         // and explicit retry wake the loop immediately (even with unchanged code).

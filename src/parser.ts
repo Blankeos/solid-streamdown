@@ -1,7 +1,7 @@
 /*
  * Copyright Vercel, Inc.
  * Licensed under the Apache License, Version 2.0 (see LICENSE-STREAMDOWN).
- * Native pipeline and HAST postprocessing adapted from Streamdown 2.7.0.
+ * Native pipeline and HAST postprocessing adapted from Streamdown 2.7.1.
  * JSX conversion and legacy compatibility use Solid's runtime.
  */
 import type { JSX } from "solid-js";

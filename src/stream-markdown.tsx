@@ -16,6 +16,7 @@ import type {
   ComponentOverrides,
   StreamMarkdownProps,
   StreamdownProps,
+  StreamdownRootAttributes,
 } from "./types";
 import { parseMarkdownTree } from "./parser";
 import {
@@ -310,7 +311,9 @@ export const StreamMarkdown: Component<StreamMarkdownProps> = (props) => (
 );
 
 /** Native interface: stable per-index owners and content-keyed parser memos. */
-export const Streamdown: Component<StreamdownProps> = (input) => {
+export const Streamdown: Component<
+  StreamdownProps & StreamdownRootAttributes
+> = (input) => {
   const props = mergeProps(
     {
       ...defaultStreamdownContext,
@@ -326,6 +329,16 @@ export const Streamdown: Component<StreamdownProps> = (input) => {
     input,
   );
   const active = () => props.mode !== "static" && props.isAnimating;
+  // `data-*` and `aria-*` props belong to the root element. TypeScript accepts
+  // any such prop on a component, so pick them out of the input; values stay
+  // reactive getters (undefined removes the attribute).
+  const rootAttributes: Record<string, unknown> = {};
+  for (const name of Object.keys(input))
+    if (name.startsWith("data-") || name.startsWith("aria-"))
+      Object.defineProperty(rootAttributes, name, {
+        enumerable: true,
+        get: () => (input as Record<string, unknown>)[name],
+      });
   // While streaming, token-rate updates are throttled to one render per frame:
   // the browser cannot paint more often, and every source change re-parses and
   // re-schedules the tail block. The first update after an idle frame renders
@@ -550,6 +563,7 @@ export const Streamdown: Component<StreamdownProps> = (input) => {
       })}
     >
       <div
+        {...rootAttributes}
         ref={container}
         dir={props.dir === "auto" ? undefined : props.dir}
         data-caret={props.caret}

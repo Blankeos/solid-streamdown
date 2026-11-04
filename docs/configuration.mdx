@@ -3,7 +3,7 @@ title: Configuration
 description: Core props and the exact upstream target.
 ---
 
-The target is React Streamdown **2.7.0**, not an unversioned latest API. Exported declarations in your installed package are the authority for available props. The functional surface is implemented; [the parity checklist](/streamdown-parity) maps source and fixtures and records final verification separately.
+The target is React Streamdown **2.7.1**, not an unversioned latest API. Exported declarations in your installed package are the authority for available props. The functional surface is implemented; [the parity checklist](/streamdown-parity) maps source and fixtures and records final verification separately.
 
 Defaults below describe native `Streamdown`, not the [legacy interface](/legacy). Omitted optional props have no configured value unless a fallback is described. These manual maps follow `src/types.ts` and the renderer defaults; they are display strings, not executable configuration.
 
@@ -129,7 +129,7 @@ Defaults below describe native `Streamdown`, not the [legacy interface](/legacy)
       type: "PluggableList",
       description:
         "Replaces raw HTML parsing, sanitation and hardening defaults; trusted application configuration.",
-      default: "defaultRehypePluginsArray (raw, sanitize, harden)",
+      default: "defaultRehypePluginsArray (raw, sanitize, harden; permissive, see Security to restrict image origins)",
     },
     remarkRehypeOptions: {
       type: "Readonly<RemarkRehypeOptions>",

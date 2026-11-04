@@ -6,17 +6,17 @@ A SolidJS port of Streamdown, designed for AI-powered streaming.
 
 Formatting Markdown is easy, but when you tokenize and stream it, new challenges arise. Solid Streamdown is built specifically to handle the unique requirements of streaming Markdown content from AI models, providing seamless formatting even with incomplete or unterminated Markdown blocks.
 
-Solid Streamdown aims to be a 1:1 native Solid port of Vercel's [Streamdown 2.7.0](https://github.com/vercel/streamdown), based on the original [Solid Streamdown](https://github.com/vherbruck/solid-streamdown).
+Solid Streamdown aims to be a 1:1 native Solid port of Vercel's [Streamdown 2.7.1](https://github.com/vercel/streamdown), based on the original [Solid Streamdown](https://github.com/vherbruck/solid-streamdown).
 
 ## Fork status
 
-`@blankeos/solid-streamdown` is an independently maintained fork of [solid-streamdown](https://github.com/vherbruck/solid-streamdown). My goal is to get these native Streamdown 2.7.0 features and fixes merged upstream. The upstream contribution is tracked in [PR #5](https://github.com/vherbruck/solid-streamdown/pull/5); this scoped package lets Solid applications use the work in the meantime.
+`@blankeos/solid-streamdown` is an independently maintained fork of [solid-streamdown](https://github.com/vherbruck/solid-streamdown). My goal is to get these native Streamdown 2.7.1 features and fixes merged upstream. The upstream contribution is tracked in [PR #5](https://github.com/vherbruck/solid-streamdown/pull/5); this scoped package lets Solid applications use the work in the meantime.
 
 The `main` branch contains the scoped package. The `feat/streaming-content-animation` branch keeps the upstream `solid-streamdown` package identity for the PR.
 
 ## Features
 
-- 🚀 **1:1 Solid port** of Streamdown 2.7.0 is the goal
+- 🚀 **1:1 Solid port** of Streamdown 2.7.1 is the goal
 - 🔄 **Streaming-optimized** - Handles incomplete Markdown gracefully
 - 🎨 **Unterminated block parsing** - Build with `remend` for better streaming quality
 - 📊 **GitHub Flavored Markdown** - Tables, task lists, and strikethrough support

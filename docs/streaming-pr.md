@@ -1,6 +1,6 @@
 ## Summary
 
-Ports the React Streamdown 2.7.0 interface and features to native Solid, while preserving `StreamMarkdown` and `createMarkdownStream`.
+Ports the React Streamdown 2.7.1 interface and features to native Solid, while preserving `StreamMarkdown` and `createMarkdownStream`.
 
 - Native code/math/CJK/Mermaid plugins and composable block components.
 - Copy/download controls, table fullscreen, diagram pan/zoom, link confirmation and portals.
@@ -27,7 +27,7 @@ export function MarkdownResponse() {
 }
 ```
 
-### After — native Streamdown 2.7.0-style API and plugins
+### After — native Streamdown 2.7.1-style API and plugins
 
 The same stream can feed the new component, so the transport does not need to change:
 

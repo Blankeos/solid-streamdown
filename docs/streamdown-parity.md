@@ -1,24 +1,36 @@
-# React Streamdown 2.7.0 acceptance checklist
+# React Streamdown 2.7.1 acceptance checklist
 
-Exact target: `streamdown@2.7.0`, `vercel/streamdown` reference commit `08da224`.
+Exact target: `streamdown@2.7.1`, `vercel/streamdown` reference commit `4e8cf96`.
 Goal: 1:1 functional API/behavior compatibility with native Solid component and
 JSX types, reactive props and owner-based lifecycle. The full functional surface
 is implemented. This checklist distinguishes implementation evidence from final
 verification and is not a declaration of exhaustive performance/security parity.
 
+## 2.7.1 update (2.7.0 -> 2.7.1, reference `08da224` -> `4e8cf96`)
+
+Ported natively with failing tests first (`test/streamdown-271.test.tsx`):
+CJK per-character split in `sep: "word"` mode, link reference definitions keep
+the document in one block (including definitions nested in blockquotes/lists),
+`data-*`/`aria-*` props on the root element (reactive), Mermaid `mermaidAriaLabel`
+and `errorMermaid` translations, and the remote-image security guidance
+(`docs/security.mdx`). Already satisfied natively and pinned by tests:
+`HighlightResult`/`HighlightToken` exports (`export type * from plugin-types`,
+checked in `test/typechecks/chat.tsx`) and `mode="static"` rendering and parsing
+once on mount (no hydration flag re-render in Solid).
+
 ## Verified checks
 
 Verified against the completed full-port checkout:
 
-| Verification                                              | Result                                                |
-| --------------------------------------------------------- | ----------------------------------------------------- |
-| `bun run test:run`                                        | 196 tests passed across 16 files                      |
-| `bun run typecheck`, `bun run check:fix`, `bun run build` | Passed                                                |
-| `bun run test:types`                                      | Built-package consumer types passed                   |
-| `bun run test:browser`                                    | 31 Chromium tests passed across 11 files              |
-| `bun run test:hydration`                                  | 1 separate Chromium hydration test passed             |
-| `bun run test:ssr`                                        | Node SSR without browser globals passed               |
-| Gittydocs 0.0.7 build                                     | 30 static routes, 30 Markdown exports and `/llms.txt` |
+| Verification                                              | Result                                                                                                                                                                 |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run test:run`                                        | 217 tests passed across 17 files (plus 1 opt-in benchmark skipped)                                                                                                     |
+| `bun run typecheck`, `bun run check:fix`, `bun run build` | Passed                                                                                                                                                                 |
+| `bun run test:types`                                      | Built-package consumer types passed                                                                                                                                    |
+| `bun run test:browser`                                    | 30 of 31 Chromium tests passed; `long-reveal.spec.ts` fails identically on the pre-2.7.1 baseline `adcbbe1` when the machine is unloaded (timing-sensitive, see below) |
+| `bun run test:hydration`                                  | 1 separate Chromium hydration test passed                                                                                                                              |
+| `bun run test:ssr`                                        | Node SSR without browser globals passed                                                                                                                                |
+| Gittydocs 0.0.7 build                                     | 30 static routes, 30 Markdown exports and `/llms.txt`                                                                                                                  |
 
 The published Gittydocs 0.0.7 docs-only rebuild produced 30 static routes, 30
 Markdown exports and `/llms.txt`. Configuration exports retain all 41
@@ -52,7 +64,7 @@ new timeline slots. Visible `data-sd-animate` spans contain no trailing
 whitespace, and custom transform glyph hosts remain intact. Both hosts inherit
 the parent's `white-space` semantics; the whitespace host uses a timed opacity
 reveal so an ancestor link's underline does not paint over it before reveal.
-This is an intentional native correctness deviation from pinned React 2.7.0's
+This is an intentional native correctness deviation from pinned React 2.7.1's
 glued whitespace DOM, not a Solid framework limitation.
 
 `browser/whitespace.spec.ts` compares animated and unanimated native layout in
@@ -93,8 +105,9 @@ checklist, PR summary and implementation scope provide maintenance routes.
 
 ## Evidence boundaries
 
-No comprehensive security/hydration audit or comparative performance benchmark
-is claimed. Document repair/preparation and segmentation observe accumulated
+No comprehensive security/hydration audit is claimed. An opt-in jsdom streaming
+benchmark (`SD_BENCH=1 bunx vitest run test/streaming-perf.bench.test.tsx`) exists;
+it is not a React comparison. Document repair/preparation and segmentation observe accumulated
 input; unchanged blocks have content-keyed parsing memos, while references and
 footnotes can require a document-wide parse. This is not constant-time parsing.
 Source-based reveal identity is best-effort across transformed or positionless

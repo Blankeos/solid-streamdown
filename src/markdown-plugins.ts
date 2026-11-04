@@ -1,7 +1,7 @@
 /*
  * Copyright Vercel, Inc.
  * Licensed under the Apache License, Version 2.0 (see LICENSE-STREAMDOWN).
- * Ported from Streamdown 2.7.0 (https://github.com/vercel/streamdown).
+ * Ported from Streamdown 2.7.1 (https://github.com/vercel/streamdown).
  */
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
