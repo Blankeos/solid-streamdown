@@ -11,7 +11,7 @@ import { parseMarkdownTree, type ParseOptions } from "./parser";
 import { HastRoot } from "./hast-render";
 import { shareHast } from "./share-hast";
 import { BlockIncompleteContext } from "./block-incomplete-context";
-import type { AnimatePlugin } from "./animate-plugin";
+import { REUSE_SETTLED, type AnimatePlugin } from "./animate-plugin";
 import type { StreamdownProps } from "./types";
 
 export { normalizeHtmlIndentation } from "./preprocess";
@@ -105,7 +105,7 @@ export const Block: Component<BlockProps> = (props) => {
   const tree = createMemo(
     () => {
       const parsed = copyHast(baseTree());
-      props.animatePlugin?.rehypePlugin()(parsed);
+      props.animatePlugin?.rehypePlugin(REUSE_SETTLED)(parsed);
       previousTree = shareHast(previousTree, parsed);
       return previousTree;
       // Always notify so the commit effect below runs once per plugin pass.

@@ -50,18 +50,35 @@ describe("streaming perf", () => {
         container,
       );
       const start = performance.now();
-      let slowest = 0;
+      const updates: number[] = [];
       for (let i = 20; i <= full.length + 19; i += 20) {
         const t = performance.now();
         setText(full.slice(0, i));
         flushFrames();
-        slowest = Math.max(slowest, performance.now() - t);
+        updates.push(performance.now() - t);
       }
       const total = performance.now() - start;
       setAnimating(false);
       flushFrames();
+      // Append-only streaming should cost roughly the same per update however
+      // long the paragraph already is: compare the median update early in the
+      // stream (10-20%, past warm-up) with the median of the last 10%.
+      const median = (from: number, to: number) => {
+        const window = updates
+          .slice(
+            Math.floor(updates.length * from),
+            Math.ceil(updates.length * to),
+          )
+          .sort((a, b) => a - b);
+        return window[Math.floor(window.length / 2)];
+      };
+      const early = median(0.1, 0.2);
+      const late = median(0.9, 1);
       console.log(
-        `streamed ${full.length} chars in ${Math.ceil(full.length / 20)} updates: total ${total.toFixed(0)}ms, slowest update ${slowest.toFixed(1)}ms`,
+        `streamed ${full.length} chars in ${updates.length} updates: total ${total.toFixed(0)}ms, slowest update ${Math.max(...updates).toFixed(1)}ms, median update early ${early.toFixed(1)}ms -> late ${late.toFixed(1)}ms (x${(late / early).toFixed(1)})`,
+      );
+      expect(late / early).toBeLessThan(
+        Number(process.env.SD_BENCH_MAX_GROWTH ?? 5),
       );
       expect(container.textContent).toBe(full.replace(/\*\*|`/g, "").trimEnd());
       if (process.env.SD_BENCH_OUT)

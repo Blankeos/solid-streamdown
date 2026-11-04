@@ -24,7 +24,7 @@ export interface AnimateOptions {
 export interface AnimatePlugin {
   name: "animate";
   type: "animate";
-  rehypePlugin: () => (tree: Root) => void;
+  rehypePlugin: (reuse?: typeof REUSE_SETTLED) => (tree: Root) => void;
   /** Mark the last rendered char count as settled (already visible). */
   commit: () => void;
   /** Char count written by the last rehype run (non-destructive). */
@@ -177,7 +177,19 @@ interface AnimateRenderState {
   committedCharCount: number;
   lastRenderCharCount: number;
   timingByIdentity: Map<string, UnitTiming>;
+  /** Fully revealed text-node replacements from the previous pass (see REUSE_SETTLED). */
+  settled: Map<string, Array<Element | Text>>;
 }
+
+/**
+ * Internal renderer opt-in (never passed by unified): reuse the previous pass's
+ * span objects for text nodes whose every unit has finished revealing. Their
+ * output is fixed (zero duration, no delay), so the renderer's structural
+ * sharing keeps them by reference and append-only streams only build spans for
+ * the still-animating tail. Public pipelines keep fresh nodes because later
+ * plugins may mutate them.
+ */
+export const REUSE_SETTLED: unique symbol = Symbol("sd-animate-reuse-settled");
 
 const WHITESPACE_RE = /\s/;
 // Scripts written without spaces between words, plus CJK / fullwidth
@@ -479,10 +491,18 @@ export function createAnimatePlugin(
     committedCharCount: 0,
     lastRenderCharCount: 0,
     timingByIdentity: new Map(),
+    settled: new Map(),
   };
 
-  const rehypePlugin = () => (tree: Root) => {
+  const rehypePlugin = (reuse?: unknown) => (tree: Root) => {
     const now = timeline?.now() ?? defaultNow();
+    const reuseSettled = reuse === REUSE_SETTLED;
+    const previousSettled = reuseSettled ? state.settled : undefined;
+    const nextSettled = new Map<string, Array<Element | Text>>();
+    // Same rendered and source origin and same text: same identities and,
+    // once every unit has settled, byte-identical spans.
+    const settledKey = (node: Text, offset: number) =>
+      `${offset}|${node.position?.start.offset ?? ""}|${node.value}`;
     const entries = collectTextAndVoid(tree);
     // A text node may split or merge when reference links resolve or blocks
     // collapse into a document. Its start and local index are not independent
@@ -517,6 +537,10 @@ export function createAnimatePlugin(
         renderedOffset++;
         continue;
       }
+      if (previousSettled?.has(settledKey(node, renderedOffset))) {
+        renderedOffset += node.value.length;
+        continue;
+      }
       const parts = split(node.value);
       let local = 0;
       for (const part of parts) {
@@ -545,9 +569,11 @@ export function createAnimatePlugin(
         timing = { bornAt: now, startAt, endAt: startAt + config.duration };
         state.timingByIdentity.set(identity, timing);
       }
+      const settled = now >= timing.endAt;
       return {
-        duration: now >= timing.endAt ? 0 : config.duration,
-        delay: now >= timing.endAt ? 0 : timing.startAt - now,
+        settled,
+        duration: settled ? 0 : config.duration,
+        delay: settled ? 0 : timing.startAt - now,
       };
     };
 
@@ -601,6 +627,19 @@ export function createAnimatePlugin(
         continue;
       }
       const liAncestor = findLiAncestor(ancestors);
+      // List items stamp their marker from the first word on every pass.
+      const key =
+        reuseSettled && !liAncestor
+          ? settledKey(textNode, counter.count)
+          : undefined;
+      const cached = key === undefined ? undefined : previousSettled!.get(key);
+      if (cached) {
+        counter.count += text.length;
+        nextSettled.set(key!, cached);
+        pending.byNode.set(textNode, cached);
+        continue;
+      }
+      let allSettled = true;
       const needsMarker = Boolean(
         liAncestor && !liAncestor.properties?.["data-sd-animate-marker"],
       );
@@ -615,7 +654,8 @@ export function createAnimatePlugin(
           if (WHITESPACE_ONLY_RE.test(part)) {
             return [{ type: "text", value: part } as Text];
           }
-          const { duration, delay } = timingFor(identity, partStart);
+          const { duration, delay, settled } = timingFor(identity, partStart);
+          if (!settled) allSettled = false;
           if (liAncestor && needsMarker && !markerStamped) {
             stampMarker(liAncestor, duration, delay, config.easing, partStart);
             stampCheckbox(liAncestor, config, duration, delay, partStart);
@@ -652,6 +692,7 @@ export function createAnimatePlugin(
         },
       );
       pending.byNode.set(textNode, replacement);
+      if (key !== undefined && allSettled) nextSettled.set(key, replacement);
     }
 
     // Splice every text node's spans in one rebuild per parent.
@@ -668,6 +709,7 @@ export function createAnimatePlugin(
     }
 
     state.lastRenderCharCount = counter.count;
+    if (reuseSettled) state.settled = nextSettled;
   };
 
   Object.defineProperty(rehypePlugin, "name", { value: "rehypeAnimate" });

@@ -4,6 +4,7 @@ import { parseMarkdownTree } from "../src/parser";
 import {
   MAX_ANIMATION_BACKLOG_MS,
   createAnimatePlugin,
+  REUSE_SETTLED,
   createAnimateTimeline,
 } from "../src/animate-plugin";
 
@@ -489,5 +490,51 @@ describe("createAnimatePlugin", () => {
     });
     // Floor 4ms would give 1199*4=4796ms; hard cap keeps it within budget.
     expect(Math.max(...delays)).toBeLessThanOrEqual(MAX_ANIMATION_BACKLOG_MS);
+  });
+});
+
+describe("settled span reuse (renderer pass)", () => {
+  // The renderer reuses span objects of fully revealed text nodes across
+  // passes so append-only streams only rebuild the animating tail. Reuse must
+  // be invisible: every pass must equal a plugin run that rebuilds everything.
+  it("renders the same HAST as a full rebuild across appends and rewrites", () => {
+    const steps = [
+      "Settled words then [a link",
+      "Settled words then [a link](https://x.dev) and *emph",
+      "Settled words then [a link](https://x.dev) and *emph* plus more",
+      "Intro\n\nSettled words then [a link](https://x.dev) and *emph* plus more",
+      "Intro\n\nSettled words then [a link](https://x.dev) and *emph* plus more\n\n- item one\n- item",
+    ];
+    for (const sep of ["char", "word"] as const) {
+      let now = 0;
+      const clocks = [0, 0].map(() =>
+        createAnimateTimeline({ now: () => now }),
+      );
+      const [fresh, reused] = clocks.map((timeline) =>
+        createAnimatePlugin({ sep, timeline }),
+      );
+      for (const markdown of steps) {
+        for (const time of [now + 30, now + 2000, now + 2010]) {
+          now = time;
+          const trees = [fresh, reused].map((plugin, index) => {
+            clocks[index].beginPass(now);
+            const tree = parseMarkdownTree(markdown);
+            plugin.rehypePlugin(index ? REUSE_SETTLED : undefined)(tree);
+            clocks[index].commitPass();
+            plugin.commit();
+            return tree;
+          });
+          // Sessions are per plugin instance; everything else must match.
+          const [expected, received] = trees.map((tree) =>
+            JSON.parse(
+              JSON.stringify(tree, (key, value) =>
+                key === "data-sd-animation-session" ? undefined : value,
+              ),
+            ),
+          );
+          expect(received).toEqual(expected);
+        }
+      }
+    }
   });
 });
