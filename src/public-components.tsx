@@ -151,10 +151,16 @@ const Paragraph: DefaultComponents["p"] = (p) => {
     "class",
   ]);
   const cn = useCn();
-  const nodes = () =>
-    (local.node as Element | undefined)?.children.filter(
-      (n) => n.type !== "text" || n.value !== "",
-    );
+  // Only the first two non-empty children matter, and a streamed paragraph can
+  // hold thousands of animated spans: stop scanning there on every update.
+  const nodes = () => {
+    const children = (local.node as Element | undefined)?.children;
+    if (!children) return undefined;
+    const found: Element["children"] = [];
+    for (const n of children)
+      if ((n.type !== "text" || n.value !== "") && found.push(n) > 1) break;
+    return found;
+  };
   const unwrap = () => {
     const children = nodes();
     const only = children?.length === 1 ? children[0] : undefined;

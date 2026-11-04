@@ -1,7 +1,11 @@
 import {
   Index,
   Show,
+  createComputed,
   createMemo,
+  createRoot,
+  createSignal,
+  onCleanup,
   untrack,
   sharedConfig,
   type JSX,
@@ -111,6 +115,100 @@ function toSolidProps(
   return props;
 }
 
+type Slot = {
+  set: (value: () => HastChild) => void;
+  dispose: () => void;
+  nodes: Node[];
+};
+
+/** Resolve rendered JSX to DOM nodes the way `insert` does, reusing this
+ * slot's own text nodes positionally. Functions are read in the caller's
+ * tracking scope. */
+function resolveNodes(value: unknown, previous: Node[], out: Node[]): void {
+  while (typeof value === "function") value = (value as () => unknown)();
+  if (value == null || typeof value === "boolean") return;
+  if (Array.isArray(value)) {
+    for (const item of value) resolveNodes(item, previous, out);
+    return;
+  }
+  if (typeof value === "object" && (value as Node).nodeType) {
+    out.push(value as Node);
+    return;
+  }
+  const text = String(value);
+  const reuse = previous[out.length];
+  if (reuse?.nodeType === 3) {
+    if ((reuse as globalThis.Text).data !== text)
+      (reuse as globalThis.Text).data = text;
+    out.push(reuse);
+  } else out.push(document.createTextNode(text));
+}
+
+/**
+ * Client-side `<Index>` for HAST children that yields a flat list of DOM nodes.
+ * Each slot resolves its own rendered output in its own computation, so the
+ * host's single `insert` effect depends on this list alone instead of tracking
+ * (and on every change re-tracking) one accessor per child. Appending to a
+ * long, character-animated paragraph then costs a reference scan rather than
+ * re-subscribing thousands of slots. Text nodes belong to their slot, so they
+ * keep identity when neighbouring slots change.
+ */
+function mapChildNodes(
+  list: () => HastChild[],
+  render: (child: () => HastChild, index: number) => JSX.Element,
+): () => Node[] {
+  let items: HastChild[] = [];
+  let slots: Slot[] = [];
+  const [version, bump] = createSignal(undefined, { equals: false });
+  onCleanup(() => {
+    for (const slot of slots) slot.dispose();
+  });
+  const create = (item: HastChild, index: number): Slot =>
+    createRoot((dispose) => {
+      const [child, set] = createSignal(item);
+      const slot: Slot = { set, dispose, nodes: [] };
+      const rendered = render(child, index);
+      let mounted = false;
+      createComputed(() => {
+        const nodes: Node[] = [];
+        resolveNodes(rendered, slot.nodes, nodes);
+        slot.nodes = nodes;
+        if (mounted) bump();
+      });
+      mounted = true;
+      return slot;
+    });
+  return createMemo(() => {
+    const next = list() ?? [];
+    version();
+    return untrack(() => {
+      const length = next.length;
+      for (let index = 0; index < length; index++) {
+        if (index >= slots.length) slots.push(create(next[index], index));
+        else if (items[index] !== next[index]) {
+          const value = next[index];
+          slots[index].set(() => value);
+        }
+      }
+      for (let index = length; index < slots.length; index++)
+        slots[index].dispose();
+      slots.length = length;
+      items = next.slice();
+      const nodes: Node[] = [];
+      for (const slot of slots) for (const node of slot.nodes) nodes.push(node);
+      return nodes;
+    });
+  });
+}
+
+/** Stable scalar for children: notifies only when the value really changes, so
+ * a recomputed (but equal) parent memo does not fan out to every child slot. */
+function settled<T>(read: () => T): () => T {
+  const [value, setValue] = createSignal(untrack(read));
+  createComputed(() => setValue(() => read()));
+  return value;
+}
+
 interface HastElementProps {
   element: () => Element;
   components?: ComponentOverrides;
@@ -172,19 +270,25 @@ const HastHost: Component<HastElementProps> = (props) => {
       ? (only.children as HastChild[])
       : nodes;
   };
-  const renderedChildren = (
-    <Index each={children()}>
-      {(child) => (
-        <HastNode
-          node={child}
-          components={props.components}
-          parentTag={tagName()}
-          namespace={childNamespace()}
-          fallbackComponent={props.fallbackComponent}
-        />
-      )}
-    </Index>
+  const childTag = settled(tagName);
+  const childSpace = settled(childNamespace);
+  const renderChild = (child: () => HastChild) => (
+    <HastNode
+      node={child}
+      components={props.components}
+      parentTag={childTag()}
+      namespace={childSpace()}
+      fallbackComponent={props.fallbackComponent}
+    />
   );
+  // Server rendering and hydration keep Solid's own <Index> (string output,
+  // claimed DOM); live client trees use the flat node list.
+  const renderedChildren =
+    isServer || sharedConfig.context ? (
+      <Index each={children()}>{renderChild}</Index>
+    ) : (
+      (mapChildNodes(children, renderChild) as unknown as JSX.Element)
+    );
 
   // Solid Dynamic guesses SVG from a tag allowlist, which misses SVG a/title
   // and cannot handle HTML integration points. Carry the HAST namespace instead.

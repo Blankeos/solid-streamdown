@@ -24,10 +24,10 @@ Verified against the completed full-port checkout:
 
 | Verification                                              | Result                                                                                                                                                |
 | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bun run test:run`                                        | 217 tests passed across 17 files (plus 1 opt-in benchmark skipped)                                                                                    |
+| `bun run test:run`                                        | 218 tests passed across 17 files (plus 1 opt-in benchmark skipped)                                                                                    |
 | `bun run typecheck`, `bun run check:fix`, `bun run build` | Passed                                                                                                                                                |
 | `bun run test:types`                                      | Built-package consumer types passed                                                                                                                   |
-| `bun run test:browser`                                    | 31 of 31 Chromium tests passed (`long-reveal.spec.ts` now ages characters by rendered frames, not wall-clock time, so it no longer flakes under load) |
+| `bun run test:browser`                                    | 33 of 33 Chromium tests passed (`long-reveal.spec.ts` ages characters by rendered frames and checks settled characters never regress below opacity 1) |
 | `bun run test:hydration`                                  | 1 separate Chromium hydration test passed                                                                                                             |
 | `bun run test:ssr`                                        | Node SSR without browser globals passed                                                                                                               |
 | Gittydocs 0.0.7 build                                     | 30 static routes, 30 Markdown exports and `/llms.txt`                                                                                                 |
@@ -107,7 +107,11 @@ checklist, PR summary and implementation scope provide maintenance routes.
 
 No comprehensive security/hydration audit is claimed. An opt-in jsdom streaming
 benchmark (`SD_BENCH=1 bunx vitest run test/streaming-perf.bench.test.tsx`) exists;
-it is not a React comparison. Document repair/preparation and segmentation observe accumulated
+it is not a React comparison. It fails when the median late update of a long
+character-animated paragraph exceeds 5x the early median (`SD_BENCH_MAX_GROWTH`).
+Rendering, span reuse and structural sharing track the animating tail, but the
+growing block is still re-parsed on every update and the browser still lays out
+the whole paragraph. Document repair/preparation and segmentation observe accumulated
 input; unchanged blocks have content-keyed parsing memos, while references and
 footnotes can require a document-wide parse. This is not constant-time parsing.
 Source-based reveal identity is best-effort across transformed or positionless

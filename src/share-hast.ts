@@ -58,7 +58,7 @@ const sameProperties = (
     const a = previous[key];
     const b = next[key];
     if (key === "style" && animated) {
-      if (stripDelays(a) !== stripDelays(b)) return false;
+      if (a !== b && stripDelays(a) !== stripDelays(b)) return false;
     } else if (!sameValue(a, b)) return false;
   }
   return true;
@@ -70,11 +70,19 @@ const sameProperties = (
  * previous object identity, so reference-keyed renderers skip it entirely.
  * Neither tree is mutated; changed nodes are shallow copies of `next`.
  */
+/**
+ * `next` nodes that come back unchanged on a later pass (the animate plugin
+ * reuses fully revealed spans) map to the node shared for them last time, so
+ * the comparison is skipped while that node still occupies the slot.
+ */
+const copies = new WeakMap<object, HastNode>();
+
 export function shareHast<T extends HastNode>(
   previous: HastNode | undefined,
   next: T,
 ): T {
   if (!previous || previous === next) return next;
+  if (copies.get(next) === previous) return previous as T;
   if (previous.type !== next.type) return next;
   const positionShared = samePosition(previous.position, next.position);
   if (next.type === "text" || next.type === "comment" || next.type === "raw")
@@ -104,10 +112,14 @@ export function shareHast<T extends HastNode>(
     if (shared !== prevChildren[index]) childrenShared = false;
     return shared;
   });
-  if (selfShared && childrenShared) return previous as T;
+  if (selfShared && childrenShared) {
+    copies.set(next, previous);
+    return previous as T;
+  }
   const copy = { ...nextParent } as Element | Root;
   copy.children = (childrenShared ? prevChildren : children) as never;
   if (propertiesShared && copy.type === "element")
     copy.properties = (previous as Element).properties;
+  copies.set(next, copy);
   return copy as T;
 }
