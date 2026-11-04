@@ -93,3 +93,69 @@ test("long guide keeps aged characters visible during structural Markdown rewrit
   await expect(page.locator(".reveal table")).toHaveCount(1);
   await expect(page.locator(".reveal pre")).toHaveCount(2);
 });
+
+// Strict monotonic variant: once a character node has reached opacity 1 it is
+// settled and must never drop below 1 again (no CSS animation restart, e.g.
+// from re-inserting or moving its DOM during a structural rewrite).
+for (const [name, query] of [
+  ["long guide", "?reveal&long"],
+  ["minimal table", "?reveal&table"],
+] as const) {
+  test(`${name}: a settled character never regresses below opacity 1`, async ({
+    page,
+  }) => {
+    test.setTimeout(120000);
+    await page.goto(`http://localhost:5198/test/browser/${query}`);
+    const result = await page.evaluate(async () => {
+      const settled = new WeakMap<Element, string>();
+      const violations: unknown[] = [];
+      let observed = 0;
+      let settledCount = 0;
+      let inTable = 0;
+      (document.querySelector("button") as HTMLButtonElement).click();
+      const status = document.querySelector("[data-appending]")!;
+      while (status.getAttribute("data-appending") === "true") {
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+        for (const node of document.querySelectorAll(
+          ".reveal span[data-sd-animate]",
+        )) {
+          observed++;
+          const opacity = Number(getComputedStyle(node).opacity);
+          if (node.closest("table")) inTable++;
+          if (opacity === 1) {
+            if (!settled.has(node)) settledCount++;
+            settled.set(
+              node,
+              `${node.getAttribute("data-sd-key")}:${node.textContent}`,
+            );
+          } else if (
+            // Same DOM node still showing the same source character: a slot
+            // reused for a different character legitimately fades in anew.
+            settled.get(node) ===
+              `${node.getAttribute("data-sd-key")}:${node.textContent}` &&
+            violations.length < 20
+          ) {
+            violations.push({
+              text: node.textContent,
+              opacity,
+              inTable: !!node.closest("table"),
+              key: node.getAttribute("data-sd-key"),
+              settledAs: settled.get(node),
+              parent: node.parentElement?.outerHTML.slice(0, 300),
+              delay: (
+                node.getAnimations()[0]?.effect as KeyframeEffect | undefined
+              )?.getComputedTiming().delay,
+              time: node.getAnimations()[0]?.currentTime,
+            });
+          }
+        }
+      }
+      return { violations, observed, settledCount, inTable };
+    });
+    expect(result.settledCount).toBeGreaterThan(50);
+    expect(result.inTable).toBeGreaterThan(0);
+    expect(result.violations).toEqual([]);
+  });
+}

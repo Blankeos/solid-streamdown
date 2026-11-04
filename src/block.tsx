@@ -117,7 +117,9 @@ export const Block: Component<BlockProps> = (props) => {
     tree();
     props.animatePlugin?.commit();
   });
-  const Inner = () => <HastRoot tree={tree} components={props.components} />;
+  const Inner = () => (
+    <HastRoot tree={tree} components={props.components} dropSeparators />
+  );
   return (
     <BlockIncompleteContext.Provider value={() => props.isIncomplete}>
       <Show when={props.dir} fallback={<Inner />}>

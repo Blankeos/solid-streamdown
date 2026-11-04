@@ -269,6 +269,8 @@ const HastNode: Component<HastNodeProps> = (props) => {
 };
 
 interface HastRootProps {
+  /** Drop whitespace-only text between root blocks (see Block). */
+  dropSeparators?: boolean;
   tree: () => Root;
   components?: ComponentOverrides;
   parentTag?: string;
@@ -278,8 +280,12 @@ interface HastRootProps {
 
 /** Render a whole hast Root with stable index slots at the top level. */
 export const HastRoot: Component<HastRootProps> = (props) => {
-  const children = (): HastChild[] =>
-    (props.tree().children ?? []) as HastChild[];
+  const children = (): HastChild[] => {
+    const nodes = (props.tree().children ?? []) as HastChild[];
+    return props.dropSeparators
+      ? nodes.filter((n) => n.type !== "text" || n.value.trim() !== "")
+      : nodes;
+  };
   return (
     <Index each={children()}>
       {(child) => (
